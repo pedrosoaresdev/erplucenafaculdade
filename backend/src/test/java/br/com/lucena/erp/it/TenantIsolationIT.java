@@ -66,6 +66,12 @@ class TenantIsolationIT extends IntegrationTestBase {
         Session m = master();
         assertThat(call(m, get("/api/admin/users"), null).getResponse().getStatus()).isEqualTo(400);
         assertThat(body(call(m, get("/api/admin/users").param("facultyId", b.id()), null)).get("totalElements").asLong()).isEqualTo(1);
+        call(m, get("/api/admin/roles").param("facultyId", b.id()), null);
+        // acesso de suporte do Master registrado uma vez (janela de 30 min) e visível na auditoria da própria faculdade
+        JsonNode supportAudit = body(call(b.admin(), get("/api/admin/audit").param("action", "PLATFORM_SUPPORT_ACCESS"), null));
+        assertThat(supportAudit.get("totalElements").asLong()).isEqualTo(1);
+        assertThat(supportAudit.get("content").get(0).get("actorName").asText()).isEqualTo("master");
+        assertThat(body(call(a.admin(), get("/api/admin/audit").param("action", "PLATFORM_SUPPORT_ACCESS"), null)).get("totalElements").asLong()).isZero();
         JsonNode dash = body(call(m, get("/api/platform/dashboard"), null));
         assertThat(dash.get("faculties").asLong()).isGreaterThanOrEqualTo(2);
     }

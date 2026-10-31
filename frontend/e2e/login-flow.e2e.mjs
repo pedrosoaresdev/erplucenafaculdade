@@ -86,6 +86,19 @@ try {
   await shot(page, '05-faculdades');
   step('faculdade criada com Diretor Geral e senha temporária exibida uma vez');
 
+  // Suporte do Master: entra nos dados da faculdade (registrado na auditoria dela)
+  await page.getByRole('button', { name: 'Ações para Faculdade Lucena Centro' }).click();
+  await page.getByRole('menuitem', { name: 'Acessar como suporte' }).click();
+  await page.waitForURL(/\/academico\/alunos$/);
+  await page.getByRole('status', { name: /Em suporte à faculdade Faculdade Lucena Centro/ }).waitFor();
+  await page.getByText('Nenhum aluno encontrado.').waitFor();
+  await page.goto(`${BASE}/admin/usuarios`);
+  await page.getByText('ana@lucena.edu.br').waitFor();
+  await shot(page, '05b-suporte-master');
+  await page.getByRole('button', { name: 'Encerrar suporte à faculdade' }).click();
+  await page.getByRole('status', { name: /Em suporte/ }).waitFor({ state: 'detached' });
+  step('Master acessou a faculdade como suporte e encerrou o suporte');
+
   // 3) Sair e entrar como Diretor na faculdade (login escopado + troca obrigatória)
   await page.getByRole('button', { name: 'Menu do usuário' }).click();
   await page.getByRole('menuitem', { name: 'Sair' }).click();

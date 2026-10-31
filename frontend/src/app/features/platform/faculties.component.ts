@@ -9,6 +9,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { Router } from '@angular/router';
+import { SelectedFacultyService } from '../../core/selected-faculty.service';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { filter, switchMap } from 'rxjs';
@@ -50,6 +52,7 @@ import { CreatedFaculty, FacultyFormComponent } from './faculty-form.component';
             <td class="actions">
               <button mat-icon-button [matMenuTriggerFor]="m" [attr.aria-label]="'Ações para ' + f.name"><mat-icon>more_vert</mat-icon></button>
               <mat-menu #m="matMenu">
+                @if (f.status === 'ACTIVE') { <button mat-menu-item (click)="support(f)"><mat-icon>support_agent</mat-icon> Acessar como suporte</button> }
                 <button mat-menu-item (click)="edit(f)"><mat-icon>edit</mat-icon> Editar</button>
                 @if (f.status === 'ACTIVE') { <button mat-menu-item (click)="changeStatus(f, 'SUSPEND')"><mat-icon>pause_circle</mat-icon> Suspender</button> }
                 @if (f.status === 'SUSPENDED') { <button mat-menu-item (click)="changeStatus(f, 'REACTIVATE')"><mat-icon>play_circle</mat-icon> Reativar</button> }
@@ -69,6 +72,8 @@ export class FacultiesComponent implements OnInit {
   private http = inject(HttpClient);
   private dialog = inject(MatDialog);
   private snack = inject(MatSnackBar);
+  private router = inject(Router);
+  private selected = inject(SelectedFacultyService);
   readonly page = signal<Page<FacultyView> | null>(null);
   readonly error = signal<string | null>(null);
   q = '';
@@ -86,6 +91,13 @@ export class FacultiesComponent implements OnInit {
 
   onPage(e: PageEvent): void { this.size = e.pageSize; this.load(e.pageIndex); }
   label(s: string): string { return STATUS_LABELS[s] ?? s; }
+
+  /** Entra nos dados da faculdade para suporte (o acesso é registrado na auditoria dela). */
+  support(f: FacultyView): void {
+    this.selected.select(f.id, f.name);
+    this.snack.open(`Suporte à ${f.name}: os acessos são registrados na auditoria da faculdade.`, 'OK', { duration: 5000 });
+    this.router.navigate(['/academico/alunos']);
+  }
   cnpj(c: string): string { return c.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5'); }
 
   create(): void {

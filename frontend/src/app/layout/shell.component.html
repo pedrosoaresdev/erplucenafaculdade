@@ -35,6 +35,13 @@
         }
       </nav>
       <span class="spacer"></span>
+      @if (auth.profile()?.platformAdmin && support.id()) {
+        <span class="support-chip" role="status" [attr.aria-label]="'Em suporte à faculdade ' + (support.name() ?? '')">
+          <mat-icon aria-hidden="true">support_agent</mat-icon>
+          <span class="support-name">Suporte: {{ support.name() ?? 'faculdade selecionada' }}</span>
+          <button mat-icon-button (click)="support.select(null, null)" aria-label="Encerrar suporte à faculdade" matTooltip="Encerrar suporte"><mat-icon>close</mat-icon></button>
+        </span>
+      }
       <button mat-icon-button [matMenuTriggerFor]="notif" (menuOpened)="loadNotifications()" aria-label="Notificações">
         <mat-icon [matBadge]="unread() || null" matBadgeColor="warn" matBadgeSize="small" aria-hidden="false">notifications</mat-icon>
       </button>

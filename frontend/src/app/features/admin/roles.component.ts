@@ -12,6 +12,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { AuthService } from '../../core/auth.service';
 import { PermissionView, RoleView } from '../../core/models';
 import { apiMessage } from '../../core/api-error';
+import { SelectedFacultyService } from '../../core/selected-faculty.service';
 import { FacultyPickerComponent, facultyParam } from '../../shared/faculty-picker.component';
 
 interface Draft { id?: string; code: string; name: string; description: string; systemRole: boolean; permissions: Set<string>; }
@@ -75,7 +76,7 @@ export class RolesComponent {
   readonly perms = signal<PermissionView[]>([]);
   readonly draft = signal<Draft | null>(null);
   readonly error = signal<string | null>(null);
-  readonly facultyId = signal<string | null>(null);
+  readonly facultyId = inject(SelectedFacultyService).id;
   readonly canManage = this.auth.hasPermission('ROLE_MANAGE');
   readonly groups = computed(() => {
     const m = new Map<string, PermissionView[]>();

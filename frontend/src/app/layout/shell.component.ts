@@ -12,6 +12,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
 import { filter, Subscription } from 'rxjs';
 import { AuthService } from '../core/auth.service';
+import { SelectedFacultyService } from '../core/selected-faculty.service';
 import { NotificationView, Page } from '../core/models';
 import { DatePipe } from '@angular/common';
 
@@ -68,6 +69,7 @@ const TITLES: Record<string, string> = {
 })
 export class ShellComponent implements OnInit, OnDestroy {
   readonly auth = inject(AuthService);
+  readonly support = inject(SelectedFacultyService);
   private http = inject(HttpClient);
   private router = inject(Router);
   private bp = inject(BreakpointObserver);

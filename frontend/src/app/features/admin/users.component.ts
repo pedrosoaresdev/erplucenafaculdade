@@ -19,6 +19,7 @@ import { apiMessage } from '../../core/api-error';
 import { STATUS_LABELS } from '../../shared/labels';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog.component';
 import { CredentialDialogComponent } from '../../shared/credential-dialog.component';
+import { SelectedFacultyService } from '../../core/selected-faculty.service';
 import { FacultyPickerComponent, facultyParam } from '../../shared/faculty-picker.component';
 import { UserFormComponent } from './user-form.component';
 import { UserActivityComponent } from './user-activity.component';
@@ -82,7 +83,7 @@ export class UsersComponent implements OnInit {
   private snack = inject(MatSnackBar);
   readonly page = signal<Page<UserView> | null>(null);
   readonly error = signal<string | null>(null);
-  readonly facultyId = signal<string | null>(null);
+  readonly facultyId = inject(SelectedFacultyService).id;
   readonly canManage = this.auth.hasPermission('USER_MANAGE');
   q = '';
   status: string | null = null;

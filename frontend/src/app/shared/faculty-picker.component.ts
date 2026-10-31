@@ -5,6 +5,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { FacultyView, Page } from '../core/models';
 import { AuthService } from '../core/auth.service';
+import { SelectedFacultyService } from '../core/selected-faculty.service';
 
 /** Seletor de faculdade exibido apenas ao administrador Master (demais usuários operam na própria instituição). */
 @Component({
@@ -14,7 +15,7 @@ import { AuthService } from '../core/auth.service';
     @if (auth.profile()?.platformAdmin) {
       <mat-form-field class="faculty-picker">
         <mat-label>Faculdade</mat-label>
-        <mat-select [ngModel]="facultyId()" (ngModelChange)="facultyId.set($event)">
+        <mat-select [ngModel]="facultyId()" (ngModelChange)="choose($event)">
           @if (allowAll()) { <mat-option [value]="null">Todas (visão global)</mat-option> }
           @for (f of faculties(); track f.id) { <mat-option [value]="f.id">{{ f.name }}</mat-option> }
         </mat-select>
@@ -25,6 +26,7 @@ import { AuthService } from '../core/auth.service';
 export class FacultyPickerComponent implements OnInit {
   readonly auth = inject(AuthService);
   private http = inject(HttpClient);
+  private selected = inject(SelectedFacultyService);
   readonly facultyId = model<string | null>(null);
   readonly faculties = signal<FacultyView[]>([]);
   /** Permite a opção "Todas" (visão global, ex.: auditoria). */
@@ -34,8 +36,20 @@ export class FacultyPickerComponent implements OnInit {
     if (!this.auth.profile()?.platformAdmin) return;
     this.http.get<Page<FacultyView>>('/api/platform/faculties', { params: { size: 100 } }).subscribe(p => {
       this.faculties.set(p.content);
-      if (!this.facultyId() && !this.allowAll() && p.content.length) this.facultyId.set(p.content[0].id);
+      if (!this.facultyId() && !this.allowAll() && p.content.length) this.choose(p.content[0].id);
+      else this.syncName();
     });
+  }
+
+  choose(id: string | null): void {
+    this.facultyId.set(id);
+    this.syncName();
+  }
+
+  /** Mantém o nome da faculdade em suporte para o indicador do topo. */
+  private syncName(): void {
+    const id = this.facultyId();
+    if (id && id === this.selected.id()) this.selected.name.set(this.faculties().find(f => f.id === id)?.name ?? null);
   }
 }
 

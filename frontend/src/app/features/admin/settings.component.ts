@@ -8,6 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { apiMessage } from '../../core/api-error';
 import { AuthService } from '../../core/auth.service';
+import { SelectedFacultyService } from '../../core/selected-faculty.service';
 import { FacultyPickerComponent, facultyParam } from '../../shared/faculty-picker.component';
 
 @Component({
@@ -36,7 +37,7 @@ export class SettingsComponent {
   private http = inject(HttpClient);
   private snack = inject(MatSnackBar);
   private auth = inject(AuthService);
-  readonly facultyId = signal<string | null>(null);
+  readonly facultyId = inject(SelectedFacultyService).id;
   readonly error = signal<string | null>(null);
   readonly loaded = signal(false);
   readonly form = inject(FormBuilder).nonNullable.group({
