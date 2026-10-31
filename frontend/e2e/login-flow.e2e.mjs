@@ -140,7 +140,12 @@ try {
 
   // 5) Acadêmico (Fase 4): disciplinas, curso + matriz, período, professor, turma, horários e aluno
   async function select(scope, label, option) {
-    await scope.getByRole('combobox', { name: label }).click();
+    try {
+      await scope.getByRole('combobox', { name: label }).click({ timeout: 8000 });
+    } catch (e) {
+      console.error('DIAG overlay:', await page.locator('.cdk-overlay-container').innerHTML().catch(() => '?'));
+      throw e;
+    }
     await page.getByRole('option', { name: option }).click();
     await page.getByRole('listbox').waitFor({ state: 'detached', timeout: 5000 });
   }
