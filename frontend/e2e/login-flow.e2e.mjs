@@ -142,7 +142,8 @@ try {
   // 5) Acadêmico (Fase 4): disciplinas, curso + matriz, período, professor, turma, horários e aluno
   async function select(scope, label, option) {
     try {
-      await scope.getByRole('combobox', { name: label }).click({ timeout: 8000 });
+      // Clica no campo (como o usuário): em campos estreitos o rótulo cobre o centro do seletor
+      await scope.locator('mat-form-field', { has: page.getByRole('combobox', { name: label, exact: true }) }).click({ timeout: 8000 });
     } catch (e) {
       console.error('DIAG overlay:', await page.locator('.cdk-overlay-container').innerHTML().catch(() => '?'));
       throw e;
