@@ -189,7 +189,7 @@ try {
   await form.getByRole('button', { name: 'Salvar' }).click();
   await page.getByText('Acesso gerado').waitFor();
   await page.getByRole('button', { name: 'Concluir' }).click();
-  await page.getByText('prof.carlos').waitFor();
+  await page.locator('#conteudo').getByText('prof.carlos').waitFor();
   step('professor cadastrado com acesso (cargo Professor)');
 
   await page.goto(`${BASE}/academico/turmas`);
