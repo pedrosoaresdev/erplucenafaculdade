@@ -20,7 +20,8 @@ administrativa e institucional, com isolamento entre faculdades e verificação 
 | 2 | Google Authenticator, códigos de recuperação, troca de dispositivo, step-up, segurança | ✅ Entregue |
 | 3 | Painel Master, faculdades, planos, usuários, cargos e permissões, auditoria | ✅ Entregue |
 | 4 | Cursos, disciplinas, matriz curricular, períodos letivos, turmas (horários), professores, alunos (login por matrícula), funcionários | ✅ Entregue |
-| 5–12 | Portais, secretaria, financeiro, requerimentos, mensagens, dashboards, biblioteca, relatórios | ⏳ Schema pronto, APIs/telas pendentes |
+| 5 | Portal do professor (diário: avaliações, notas, recuperação, frequência, plano de ensino, exportação Excel/CSV) e portal do aluno (painel, horários, notas, faltas, frequência, histórico, grade curricular) | ✅ Entregue |
+| 6–12 | Secretaria, financeiro, requerimentos, mensagens, dashboards, biblioteca, relatórios | ⏳ Schema pronto, APIs/telas pendentes |
 
 Módulos ainda não integrados aparecem na tela inicial como **"não integrado"** — não há botões decorativos.
 

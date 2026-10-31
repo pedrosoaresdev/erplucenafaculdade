@@ -23,6 +23,7 @@
 | `platform` | Painel Master: faculdades (tenants), planos, configurações, dashboard; endpoint público de branding |
 | `iam` | Usuários, cargos (RBAC), permissões, proteção contra escalonamento de privilégio, bootstrap do Master |
 | `academic` | Fase 4: cursos, disciplinas, matriz curricular, períodos letivos, turmas, professores, alunos e funcionários |
+| `portal` | Fase 5: portal do professor (diário de classe) e portal do aluno; cálculo de médias, frequência e situação |
 | `audit` | Auditoria (append-only) e logs de acesso |
 | `security` | JWT, conversor de sessão, TOTP, política de senha, resolução de tenant, rate limit |
 | `crypto` | AES-256-GCM, tokens aleatórios, hash, Argon2id |
@@ -114,3 +115,24 @@ Documentação completa e interativa em `/swagger-ui.html`.
 | GET/POST/PUT/DELETE | `/api/academic/employees[/{id}]`, `/access` | `USER_MANAGE` | Acesso opcional com cargos escolhidos (anti-escalonamento) |
 
 Todas as operações de escrita são auditadas. O Master informa `?facultyId=`.
+
+### Portais (Fase 5)
+
+**Regras de cálculo** (`GradeCalculator`):
+- Média = Σ(nota ÷ nota máxima × 10 × peso) ÷ Σ pesos das avaliações regulares. Com o período aberto, só entram as
+  avaliações já lançadas; com o período encerrado, avaliação sem nota vale 0.
+- Recuperação: nota final = maior valor entre a média e a nota de recuperação (normalizada para 0–10).
+- Frequência = (aulas − faltas) ÷ aulas × 100.
+- Situação ao encerrar o período: reprovado por frequência → reprovado por nota → aprovado. Mínimos em
+  *Configurações da instituição*.
+
+| Método | Rota | Permissão | Regras |
+|---|---|---|---|
+| GET | `/api/teacher/classes` | `TEACHER_PORTAL` | Só as disciplinas atribuídas ao professor |
+| GET | `/api/teacher/class-subjects/{id}` | `TEACHER_PORTAL` | Diário completo; outra disciplina → 404 |
+| POST/PUT/DELETE | `/api/teacher/class-subjects/{id}/assessments[/{aid}]` | `GRADE_MANAGE` | Período aberto; data dentro do período; nota máxima ≥ notas lançadas; exclusão só sem notas |
+| PUT | `/api/teacher/class-subjects/{id}/assessments/{aid}/grades` | `GRADE_MANAGE` | 0 ≤ nota ≤ máximo; aluno da turma; cada alteração auditada (`GRADE_CHANGED`, antes/depois) |
+| GET/POST/PUT/DELETE | `/api/teacher/class-subjects/{id}/attendance[/{sid}]` | `ATTENDANCE_MANAGE` | Uma aula por data; sem data futura; dentro do período; faltas ≤ aulas; todos os alunos registrados; auditado |
+| PUT | `/api/teacher/class-subjects/{id}/plan` | `TEACHER_PORTAL` | Plano de ensino (bloqueado com período encerrado) |
+| GET | `/api/teacher/class-subjects/{id}/export?format=xlsx\|csv` | `TEACHER_PORTAL` | Planilha de notas, médias, frequência e situação (CSV protegido contra injeção de fórmulas) |
+| GET | `/api/student/overview`, `/subjects/{id}`, `/history`, `/curriculum` | `STUDENT_PORTAL` | Somente os dados do próprio aluno |

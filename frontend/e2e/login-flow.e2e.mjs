@@ -205,6 +205,7 @@ try {
   await form.getByLabel('Nome de usuário').fill('prof.carlos');
   await form.getByRole('button', { name: 'Salvar' }).click();
   await page.getByText('Acesso gerado').waitFor();
+  const teacherTemp = (await page.locator('.secret-value').innerText()).trim();
   await page.getByRole('button', { name: 'Concluir' }).click();
   await page.locator('#conteudo').getByText('prof.carlos').waitFor();
   step('professor cadastrado com acesso (cargo Professor)');
@@ -300,7 +301,83 @@ try {
   await shot(page, '20-aluno-inicio');
   step('aluno entrou com a matrícula + autenticador e não acessa cadastros');
 
-  // 6) Responsividade (celular): menu vira gaveta, tabela vira cartões
+  // 6) Fase 5: professor lança avaliação, nota e frequência; aluno confere no portal
+  await page.getByRole('button', { name: 'Menu do usuário' }).click();
+  await page.getByRole('menuitem', { name: 'Sair' }).click();
+  await page.goto(`${BASE}/f/lucena-centro/login`);
+  await page.getByLabel('Matrícula ou nome de usuário').fill('prof.carlos');
+  await page.getByLabel('Senha', { exact: true }).fill(teacherTemp);
+  await page.getByRole('button', { name: 'Entrar' }).click();
+  const teacherSecret = await setupAuthenticator(page);
+  await page.getByLabel('Senha atual').fill(teacherTemp);
+  await page.getByLabel('Código de 6 dígitos do Google Authenticator').fill(await freshCode(teacherSecret));
+  await page.getByRole('button', { name: 'Continuar' }).click();
+  await page.getByLabel('Nova senha', { exact: true }).fill('Docencia#Forte2026');
+  await page.getByLabel('Repetir nova senha').fill('Docencia#Forte2026');
+  await page.getByRole('button', { name: 'Confirmar alteração de senha' }).click();
+  await page.getByText('Senha alterada com sucesso').waitFor();
+  await page.getByLabel('Matrícula ou nome de usuário').fill('prof.carlos');
+  await page.getByLabel('Senha', { exact: true }).fill('Docencia#Forte2026');
+  await page.getByRole('button', { name: 'Entrar' }).click();
+  await page.getByLabel('Código do autenticador').fill(await freshCode(teacherSecret));
+  await page.getByRole('button', { name: 'Verificar e entrar' }).click();
+  await page.getByRole('heading', { name: /Olá, Carlos/ }).waitFor();
+  await page.getByRole('link', { name: 'Minhas turmas' }).click();
+  await page.getByText('Lógica de Programação').first().waitFor();
+  if (await page.getByText('Banco de Dados').count()) throw new Error('professor viu disciplina de outro professor');
+  await shot(page, '21-professor-turmas');
+  await page.getByRole('link', { name: 'Abrir diário' }).click();
+  await page.getByRole('heading', { name: /Lógica de Programação — turma ADS1N/ }).waitFor();
+
+  await page.getByRole('tab', { name: 'Avaliações' }).click();
+  await page.getByLabel('Título').fill('Prova 1');
+  await page.getByRole('button', { name: 'Salvar avaliação' }).click();
+  await page.getByText('Avaliação salva').waitFor();
+  await page.getByRole('tab', { name: 'Notas e situação' }).click();
+  await page.getByRole('combobox', { name: 'Avaliação' }).click();
+  await page.getByRole('option', { name: /Prova 1/ }).click();
+  await page.getByRole('listbox').waitFor({ state: 'detached' });
+  await page.getByLabel('Nota de Beatriz Souza').fill('11');
+  if (await page.getByRole('button', { name: 'Salvar notas' }).isEnabled()) throw new Error('nota acima do máximo deveria bloquear');
+  await page.getByLabel('Nota de Beatriz Souza').fill('8.5');
+  await page.getByRole('button', { name: 'Salvar notas' }).click();
+  await page.getByText('Notas salvas').waitFor();
+  await page.getByRole('cell', { name: '8,50', exact: true }).first().waitFor();
+
+  await page.getByRole('tab', { name: 'Frequência (diário)' }).click();
+  await page.getByLabel('Conteúdo ministrado').fill('Algoritmos e fluxogramas');
+  await page.getByRole('button', { name: 'Faltou' }).click();
+  await page.getByRole('button', { name: 'Salvar frequência' }).click();
+  await page.getByText('Frequência registrada').waitFor();
+  await page.getByRole('cell', { name: 'Algoritmos e fluxogramas', exact: true }).waitFor();
+  await page.getByRole('tab', { name: 'Notas e situação' }).click();
+  await page.getByRole('cell', { name: '0%', exact: true }).waitFor();
+  await shot(page, '22-diario-notas');
+  step('professor lançou avaliação, nota (com bloqueio acima do máximo) e frequência');
+
+  await page.getByRole('button', { name: 'Menu do usuário' }).click();
+  await page.getByRole('menuitem', { name: 'Sair' }).click();
+  await page.goto(`${BASE}/f/lucena-centro/login`);
+  await page.getByLabel('Matrícula ou nome de usuário').fill(registration);
+  await page.getByLabel('Senha', { exact: true }).fill('Estudo#Forte2026');
+  await page.getByRole('button', { name: 'Entrar' }).click();
+  await page.getByLabel('Código do autenticador').fill(await freshCode(studentSecret));
+  await page.getByRole('button', { name: 'Verificar e entrar' }).click();
+  await page.getByRole('heading', { name: /Olá, Beatriz/ }).waitFor();
+  await page.getByRole('link', { name: 'Meu painel' }).click();
+  await page.getByRole('heading', { name: 'Olá, Beatriz!' }).waitFor();
+  await page.getByRole('cell', { name: '8,50', exact: true }).waitFor();
+  await page.getByText('2 de 2').waitFor();
+  await shot(page, '23-aluno-painel');
+  await page.getByRole('link', { name: 'Lógica de Programação' }).click();
+  await page.getByText('Algoritmos e fluxogramas').waitFor();
+  await page.getByText('Prova 1').waitFor();
+  await shot(page, '24-aluno-disciplina');
+  await page.goto(`${BASE}/aluno/grade`);
+  await page.getByText('0% concluído').waitFor();
+  step('aluno vê nota, faltas, frequência, detalhe da disciplina e grade curricular');
+
+  // 7) Responsividade (celular): menu vira gaveta, tabela vira cartões
   const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, storageState: await ctx.storageState() });
   const m = await mobile.newPage();
   await m.goto(`${BASE}/f/lucena-centro/login`);
