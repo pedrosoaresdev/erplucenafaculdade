@@ -3,7 +3,7 @@ import { inject } from '@angular/core';
 import { catchError, switchMap, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 
-const PUBLIC = ['/api/auth/', '/api/public/'];
+const PUBLIC = ['/api/auth/', '/api/public/', '/api/setup/'];
 
 /** Anexa o Bearer token e, em caso de 401, tenta renovar a sessão uma única vez. */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
