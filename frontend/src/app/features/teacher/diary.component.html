@@ -1,0 +1,151 @@
+@if (d(); as d) {
+  <header class="page-header"><div>
+    <a routerLink="/professor/turmas" class="back-link"><span aria-hidden="true">←</span> Minhas turmas</a>
+    <h1>{{ d.teaching.subjectName }} — turma {{ d.teaching.classCode }}</h1>
+    <p class="muted">{{ d.teaching.courseName }} · {{ d.teaching.termCode }} ·
+      {{ d.teaching.weekday ? days[d.teaching.weekday] + ' ' + d.teaching.startTime!.slice(0,5) + '–' + d.teaching.endTime!.slice(0,5) : 'horário a definir' }}
+      · nota mínima {{ d.minGrade | number:'1.1-2' }} · frequência mínima {{ d.minAttendancePct | number:'1.0-0' }}%</p>
+  </div>
+    <div class="row-actions">
+      <button mat-stroked-button (click)="export('xlsx')"><mat-icon>table_view</mat-icon> Exportar Excel</button>
+      <button mat-stroked-button (click)="export('csv')"><mat-icon>download</mat-icon> CSV</button>
+    </div>
+  </header>
+  @if (!d.editable) { <p class="alert info" role="status"><mat-icon aria-hidden="true">lock</mat-icon> O período letivo não está aberto: o diário está disponível somente para consulta.</p> }
+  @if (error()) { <p class="alert error" role="alert">{{ error() }}</p> }
+
+  <mat-tab-group mat-stretch-tabs="false" animationDuration="150ms">
+    <!-- ========== NOTAS ========== -->
+    <mat-tab label="Notas e situação">
+      <div class="tab-body">
+        @if (canGrade && d.editable && d.assessments.length) {
+          <mat-card class="mb">
+            <mat-card-header><mat-card-title>Lançar notas</mat-card-title></mat-card-header>
+            <mat-card-content>
+              <mat-form-field class="assessment-picker"><mat-label>Avaliação</mat-label>
+                <mat-select [ngModel]="gradeAssessmentId" (ngModelChange)="selectAssessment($event)">
+                  @for (a of d.assessments; track a.id) { <mat-option [value]="a.id">{{ a.title }} (máx. {{ a.maxScore }})</mat-option> }
+                </mat-select></mat-form-field>
+              @if (selectedAssessment(); as a) {
+                <table class="data-table grade-entry">
+                  <thead><tr><th scope="col">Aluno</th><th scope="col">Nota (0 a {{ a.maxScore }})</th></tr></thead>
+                  <tbody>@for (s of d.students; track s.studentId) {
+                    <tr><td>{{ s.name }} <span class="muted small">{{ s.registration }}</span></td>
+                      <td><input class="grade-input" type="number" min="0" [max]="a.maxScore" step="0.1" [(ngModel)]="gradeInputs[s.studentId]"
+                                 [attr.aria-label]="'Nota de ' + s.name" [class.invalid]="gradeInputs[s.studentId] != null && (gradeInputs[s.studentId]! < 0 || gradeInputs[s.studentId]! > a.maxScore)"></td></tr>
+                  }</tbody>
+                </table>
+                <p class="muted small">Deixe em branco para remover a nota. Toda alteração é registrada na auditoria.</p>
+                <button mat-flat-button (click)="saveGrades()" [disabled]="busy() || invalidGrades()">Salvar notas</button>
+              }
+            </mat-card-content>
+          </mat-card>
+        }
+        <div class="table-scroll">
+          <table class="data-table diary-table">
+            <caption class="sr-only">Notas, média, frequência e situação</caption>
+            <thead><tr><th scope="col">Aluno</th>
+              @for (a of d.assessments; track a.id) { <th scope="col" [matTooltip]="kindLabel(a)">{{ a.title }}<br><span class="muted small">máx {{ a.maxScore }} · p{{ a.weight }}</span></th> }
+              <th scope="col">Média</th><th scope="col">Final</th><th scope="col">Faltas</th><th scope="col">Freq.</th><th scope="col">Situação</th></tr></thead>
+            <tbody>@for (s of d.students; track s.studentId) {
+              <tr><td><strong>{{ s.name }}</strong><br><span class="muted small">{{ s.registration }}</span></td>
+                @for (a of d.assessments; track a.id) { <td>{{ score(s, a) != null ? (score(s, a) | number:'1.1-2') : '—' }}</td> }
+                <td>{{ s.result.average != null ? (s.result.average | number:'1.2-2') : '—' }}</td>
+                <td [class.risk]="s.result.riskGrade"><strong>{{ s.result.finalGrade != null ? (s.result.finalGrade | number:'1.2-2') : '—' }}</strong></td>
+                <td>{{ s.result.absences }}/{{ s.result.totalLessons }}</td>
+                <td [class.risk]="s.result.riskAttendance">{{ s.result.attendancePct | number:'1.0-1' }}%</td>
+                <td><span class="badge" [class]="badge(s.result)">{{ situations[s.result.situation] }}</span></td></tr>
+            } @empty { <tr><td colspan="8" class="muted">Nenhum aluno na turma.</td></tr> }</tbody>
+          </table>
+        </div>
+        <p class="muted small">Média ponderada das avaliações regulares (escala 0–10). Nota final = maior entre média e recuperação.
+          Em vermelho: abaixo do mínimo.</p>
+      </div>
+    </mat-tab>
+
+    <!-- ========== AVALIAÇÕES ========== -->
+    <mat-tab label="Avaliações">
+      <div class="tab-body two-col wide-left">
+        <table class="data-table responsive">
+          <thead><tr><th scope="col">Avaliação</th><th scope="col">Tipo</th><th scope="col">Peso</th><th scope="col">Nota máx.</th><th scope="col">Data</th><th scope="col">Lançadas</th><th scope="col"><span class="sr-only">Ações</span></th></tr></thead>
+          <tbody>@for (a of d.assessments; track a.id) {
+            <tr><td data-label="Avaliação"><strong>{{ a.title }}</strong></td><td data-label="Tipo">{{ kindLabel(a) }}</td><td data-label="Peso">{{ a.weight }}</td>
+              <td data-label="Nota máx.">{{ a.maxScore }}</td><td data-label="Data">{{ a.dueDate ? (a.dueDate | date:'dd/MM/yyyy') : '—' }}</td>
+              <td data-label="Lançadas">{{ a.graded }}/{{ d.students.length }}</td>
+              <td class="actions">@if (canGrade && d.editable) {
+                <button mat-icon-button (click)="editAssessment(a)" [attr.aria-label]="'Editar ' + a.title"><mat-icon>edit</mat-icon></button>
+                <button mat-icon-button (click)="deleteAssessment(a)" [attr.aria-label]="'Excluir ' + a.title"><mat-icon>delete</mat-icon></button> }</td></tr>
+          } @empty { <tr><td colspan="7" class="muted">Nenhuma avaliação cadastrada.</td></tr> }</tbody>
+        </table>
+        @if (canGrade && d.editable) {
+          <mat-card><mat-card-header><mat-card-title>{{ editingAssessment() ? 'Editar avaliação' : 'Nova avaliação' }}</mat-card-title></mat-card-header>
+            <mat-card-content>
+              <form [formGroup]="assessmentForm" (ngSubmit)="saveAssessment()">
+                <mat-form-field class="full"><mat-label>Título</mat-label><input matInput formControlName="title" required></mat-form-field>
+                <mat-form-field class="full"><mat-label>Tipo</mat-label><mat-select formControlName="kind">
+                  @for (k of kinds; track k[0]) { <mat-option [value]="k[0]">{{ k[1] }}</mat-option> }</mat-select></mat-form-field>
+                <mat-form-field class="full"><mat-label>Peso</mat-label><input matInput type="number" min="0.01" step="0.5" formControlName="weight" required></mat-form-field>
+                <mat-form-field class="full"><mat-label>Nota máxima</mat-label><input matInput type="number" min="0.01" formControlName="maxScore" required></mat-form-field>
+                <mat-form-field class="full"><mat-label>Data</mat-label><input matInput type="date" formControlName="dueDate"></mat-form-field>
+                <div class="row-actions"><button mat-flat-button type="submit" [disabled]="assessmentForm.invalid || busy()">Salvar avaliação</button>
+                  @if (editingAssessment()) { <button mat-button type="button" (click)="resetAssessment()">Cancelar</button> }</div>
+              </form>
+            </mat-card-content></mat-card>
+        }
+      </div>
+    </mat-tab>
+
+    <!-- ========== FREQUÊNCIA ========== -->
+    <mat-tab label="Frequência (diário)">
+      <div class="tab-body two-col wide-left">
+        <table class="data-table responsive">
+          <thead><tr><th scope="col">Data</th><th scope="col">Aulas</th><th scope="col">Conteúdo</th><th scope="col">Faltosos</th><th scope="col"><span class="sr-only">Ações</span></th></tr></thead>
+          <tbody>@for (s of sessions(); track s.id) {
+            <tr><td data-label="Data">{{ s.date | date:'dd/MM/yyyy' }}</td><td data-label="Aulas">{{ s.lessons }}</td>
+              <td data-label="Conteúdo">{{ s.content ?? '—' }}</td><td data-label="Faltosos">{{ s.absentStudents }}</td>
+              <td class="actions">@if (canAttend && d.editable) {
+                <button mat-icon-button (click)="editSession(s)" [attr.aria-label]="'Editar aula de ' + s.date"><mat-icon>edit</mat-icon></button>
+                <button mat-icon-button (click)="deleteSession(s)" [attr.aria-label]="'Excluir aula de ' + s.date"><mat-icon>delete</mat-icon></button> }</td></tr>
+          } @empty { <tr><td colspan="5" class="muted">Nenhuma aula registrada.</td></tr> }</tbody>
+        </table>
+        @if (canAttend && d.editable) {
+          <mat-card><mat-card-header><mat-card-title>{{ editingSession() ? 'Editar aula' : 'Registrar aula' }}</mat-card-title></mat-card-header>
+            <mat-card-content>
+              <form [formGroup]="sessionForm" (ngSubmit)="saveSession()">
+                <div class="form-grid">
+                  <mat-form-field><mat-label>Data da aula</mat-label><input matInput type="date" formControlName="date" required></mat-form-field>
+                  <mat-form-field><mat-label>Nº de aulas</mat-label><input matInput type="number" min="1" max="10" formControlName="lessons" required></mat-form-field>
+                </div>
+                <mat-form-field class="full"><mat-label>Conteúdo ministrado</mat-label><textarea matInput rows="2" formControlName="content"></textarea></mat-form-field>
+                <table class="data-table attendance-entry">
+                  <thead><tr><th scope="col">Aluno</th><th scope="col">Faltas</th></tr></thead>
+                  <tbody>@for (s of d.students; track s.studentId) {
+                    <tr [class.absent]="absences[s.studentId] > 0"><td>{{ s.name }}</td>
+                      <td class="nowrap"><input class="grade-input" type="number" min="0" [max]="sessionForm.getRawValue().lessons" [(ngModel)]="absences[s.studentId]"
+                                 [ngModelOptions]="{ standalone: true }" [attr.aria-label]="'Faltas de ' + s.name" placeholder="0">
+                        <button mat-button type="button" (click)="markAllAbsent(s.studentId)">{{ absences[s.studentId] ? 'Presente' : 'Faltou' }}</button></td></tr>
+                  }</tbody>
+                </table>
+                <div class="row-actions mt"><button mat-flat-button type="submit" [disabled]="sessionForm.invalid || invalidAbsences() || busy()">Salvar frequência</button>
+                  @if (editingSession()) { <button mat-button type="button" (click)="newSession()">Cancelar</button> }</div>
+              </form>
+            </mat-card-content></mat-card>
+        }
+      </div>
+    </mat-tab>
+
+    <!-- ========== PLANO ========== -->
+    <mat-tab label="Plano de ensino">
+      <div class="tab-body two-col">
+        <mat-card><mat-card-header><mat-card-title>Plano de ensino</mat-card-title></mat-card-header>
+          <mat-card-content>
+            <mat-form-field class="full"><mat-label>Objetivos, conteúdo programático, metodologia e avaliação</mat-label>
+              <textarea matInput rows="14" [(ngModel)]="plan" [disabled]="d.teaching.termStatus === 'CLOSED'"></textarea></mat-form-field>
+            @if (d.teaching.termStatus !== 'CLOSED') { <button mat-flat-button (click)="savePlan()" [disabled]="busy()">Salvar plano</button> }
+          </mat-card-content></mat-card>
+        <mat-card><mat-card-header><mat-card-title>Ementa da disciplina</mat-card-title></mat-card-header>
+          <mat-card-content><p class="wrap">{{ d.syllabus || 'Ementa não cadastrada pela coordenação.' }}</p></mat-card-content></mat-card>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+} @else if (error()) { <p class="alert error" role="alert">{{ error() }}</p> }

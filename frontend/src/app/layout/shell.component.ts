@@ -15,13 +15,21 @@ import { AuthService } from '../core/auth.service';
 import { NotificationView, Page } from '../core/models';
 import { DatePipe } from '@angular/common';
 
-interface NavItem { label: string; icon: string; link: string; perms?: string[]; platformOnly?: boolean; }
+interface NavItem { label: string; icon: string; link: string; perms?: string[]; platformOnly?: boolean; own?: string; }
 interface NavGroup { title: string; items: NavItem[]; }
 
 const NAV: NavGroup[] = [
   { title: 'Geral', items: [
     { label: 'Início', icon: 'dashboard', link: '/inicio' },
     { label: 'Meu perfil e segurança', icon: 'manage_accounts', link: '/perfil' },
+  ] },
+  { title: 'Portal do aluno', items: [
+    { label: 'Meu painel', icon: 'space_dashboard', link: '/aluno', own: 'STUDENT_PORTAL' },
+    { label: 'Histórico', icon: 'history_edu', link: '/aluno/historico', own: 'STUDENT_PORTAL' },
+    { label: 'Grade curricular', icon: 'account_tree', link: '/aluno/grade', own: 'STUDENT_PORTAL' },
+  ] },
+  { title: 'Portal do professor', items: [
+    { label: 'Minhas turmas', icon: 'co_present', link: '/professor/turmas', own: 'TEACHER_PORTAL' },
   ] },
   { title: 'Plataforma (Master)', items: [
     { label: 'Dashboard da plataforma', icon: 'insights', link: '/plataforma', platformOnly: true },
@@ -46,7 +54,8 @@ const NAV: NavGroup[] = [
 ];
 
 const TITLES: Record<string, string> = {
-  inicio: 'Início', perfil: 'Meu perfil', plataforma: 'Plataforma', faculdades: 'Faculdades', planos: 'Planos', admin: 'Administração',
+  inicio: 'Início', professor: 'Portal do professor', diario: 'Diário de classe', aluno: 'Portal do aluno', historico: 'Histórico',
+  grade: 'Grade curricular', disciplina: 'Disciplina', perfil: 'Meu perfil', plataforma: 'Plataforma', faculdades: 'Faculdades', planos: 'Planos', admin: 'Administração',
   academico: 'Acadêmico', cursos: 'Cursos', disciplinas: 'Disciplinas', periodos: 'Períodos letivos', turmas: 'Turmas',
   alunos: 'Alunos', professores: 'Professores', funcionarios: 'Funcionários', usuarios: 'Usuários', cargos: 'Cargos e permissões', configuracoes: 'Configurações', auditoria: 'Auditoria',
 };
@@ -75,7 +84,7 @@ export class ShellComponent implements OnInit, OnDestroy {
   readonly nav = computed(() => {
     const p = this.auth.profile();
     if (!p) return [];
-    return NAV.map(g => ({ ...g, items: g.items.filter(i => i.platformOnly ? p.platformAdmin : (!i.perms || this.auth.hasPermission(...i.perms))) }))
+    return NAV.map(g => ({ ...g, items: g.items.filter(i => i.own ? p.permissions.includes(i.own) : i.platformOnly ? p.platformAdmin : (!i.perms || this.auth.hasPermission(...i.perms))) }))
       .filter(g => g.items.length);
   });
 

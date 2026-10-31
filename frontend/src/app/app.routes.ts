@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, permissionGuard } from './core/guards';
+import { authGuard, ownPermissionGuard, permissionGuard } from './core/guards';
 
 export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./features/auth/login.component').then(m => m.LoginComponent), title: 'Entrar — Plataforma' },
@@ -18,6 +18,23 @@ export const routes: Routes = [
           { path: '', loadComponent: () => import('./features/platform/platform-dashboard.component').then(m => m.PlatformDashboardComponent), title: 'Plataforma' },
           { path: 'faculdades', loadComponent: () => import('./features/platform/faculties.component').then(m => m.FacultiesComponent), title: 'Faculdades' },
           { path: 'planos', loadComponent: () => import('./features/platform/plans.component').then(m => m.PlansComponent), title: 'Planos' },
+        ],
+      },
+      {
+        path: 'professor', canActivate: [ownPermissionGuard('TEACHER_PORTAL')],
+        children: [
+          { path: '', pathMatch: 'full', redirectTo: 'turmas' },
+          { path: 'turmas', loadComponent: () => import('./features/teacher/my-classes.component').then(m => m.MyClassesComponent), title: 'Minhas turmas' },
+          { path: 'diario/:id', loadComponent: () => import('./features/teacher/diary.component').then(m => m.DiaryComponent), title: 'Diário de classe' },
+        ],
+      },
+      {
+        path: 'aluno', canActivate: [ownPermissionGuard('STUDENT_PORTAL')],
+        children: [
+          { path: '', loadComponent: () => import('./features/student/student-home.component').then(m => m.StudentHomeComponent), title: 'Meu painel' },
+          { path: 'disciplina/:id', loadComponent: () => import('./features/student/student-subject.component').then(m => m.StudentSubjectComponent), title: 'Disciplina' },
+          { path: 'historico', loadComponent: () => import('./features/student/student-history.component').then(m => m.StudentHistoryComponent), title: 'Histórico' },
+          { path: 'grade', loadComponent: () => import('./features/student/student-curriculum.component').then(m => m.StudentCurriculumComponent), title: 'Grade curricular' },
         ],
       },
       {

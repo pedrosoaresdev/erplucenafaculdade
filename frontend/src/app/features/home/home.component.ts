@@ -8,7 +8,6 @@ import { AuthService } from '../../core/auth.service';
 
 /** Roteiro de módulos (exibidos como "em implantação" até a respectiva fase ser entregue). */
 const ROADMAP = [
-  { icon: 'person', title: 'Portais do aluno e do professor', desc: 'Notas, faltas, diário de classe, materiais', phase: 'Fase 5' },
   { icon: 'description', title: 'Secretaria', desc: 'Matrículas, contratos, declarações e históricos', phase: 'Fase 6' },
   { icon: 'payments', title: 'Financeiro', desc: 'Cobranças, boletos/Pix, baixa automática, calculadoras', phase: 'Fase 7' },
   { icon: 'assignment', title: 'Requerimentos', desc: 'Catálogo, protocolos e acompanhamento', phase: 'Fase 8' },
@@ -46,6 +45,8 @@ const ROADMAP = [
     </section>
 
     <section class="quick-links" aria-label="Atalhos">
+      @if (auth.profile()?.permissions?.includes('STUDENT_PORTAL')) { <a mat-flat-button routerLink="/aluno"><mat-icon>space_dashboard</mat-icon> Meu painel do aluno</a> }
+      @if (auth.profile()?.permissions?.includes('TEACHER_PORTAL')) { <a mat-flat-button routerLink="/professor/turmas"><mat-icon>co_present</mat-icon> Minhas turmas</a> }
       <a mat-stroked-button routerLink="/perfil"><mat-icon>manage_accounts</mat-icon> Meu perfil</a>
       <a mat-stroked-button routerLink="/perfil" [queryParams]="{ aba: 'senha' }"><mat-icon>password</mat-icon> Alterar senha</a>
       <a mat-stroked-button routerLink="/perfil" [queryParams]="{ aba: 'sessoes' }"><mat-icon>devices</mat-icon> Sessões ativas</a>

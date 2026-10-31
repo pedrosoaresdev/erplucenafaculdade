@@ -13,7 +13,7 @@
       @for (g of nav(); track g.title) {
         @if (!collapsed()) { <h3 class="nav-group">{{ g.title }}</h3> } @else { <mat-divider /> }
         @for (i of g.items; track i.link) {
-          <a class="nav-item" [routerLink]="i.link" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: i.link === '/plataforma' }"
+          <a class="nav-item" [routerLink]="i.link" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: i.link === '/plataforma' || i.link === '/aluno' }"
              [matTooltip]="collapsed() ? i.label : ''" matTooltipPosition="right" [attr.aria-label]="collapsed() ? i.label : null">
             <mat-icon aria-hidden="true">{{ i.icon }}</mat-icon>
             @if (!collapsed()) { <span>{{ i.label }}</span> }

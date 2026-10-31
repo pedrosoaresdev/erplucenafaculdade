@@ -25,3 +25,10 @@ export const permissionGuard = (...perms: string[]): CanActivateFn => () => {
   const router = inject(Router);
   return auth.hasPermission(...perms) ? true : router.createUrlTree(['/inicio'], { queryParams: { negado: 1 } });
 };
+
+/** Exige a permissão no próprio perfil (portais do aluno/professor não se aplicam ao administrador Master). */
+export const ownPermissionGuard = (perm: string): CanActivateFn => () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  return auth.profile()?.permissions.includes(perm) ? true : router.createUrlTree(['/inicio'], { queryParams: { negado: 1 } });
+};
