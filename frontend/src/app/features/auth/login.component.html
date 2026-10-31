@@ -1,0 +1,157 @@
+<main class="login-page" id="conteudo">
+  <section class="login-brand" aria-hidden="true">
+    <div class="brand-inner">
+      <mat-icon class="brand-icon">school</mat-icon>
+      <h2>ERP Universitário</h2>
+      <p>Gestão acadêmica, financeira e administrativa em um só lugar, com segurança em duas etapas.</p>
+    </div>
+  </section>
+
+  <section class="login-card" aria-labelledby="login-title">
+    @if (loading()) { <mat-progress-bar mode="indeterminate" aria-label="Carregando" /> }
+
+    <header class="login-header">
+      @if (faculty()?.logoUrl) {
+        <img class="faculty-logo" [src]="faculty()!.logoUrl" [alt]="'Logotipo de ' + faculty()!.name">
+      } @else {
+        <div class="faculty-logo placeholder" aria-hidden="true"><mat-icon>account_balance</mat-icon></div>
+      }
+      <h1 id="login-title">{{ faculty()?.name ?? (slug() ? 'Portal acadêmico' : 'Painel da Plataforma') }}</h1>
+      @if (!slug()) { <p class="muted">Acesso restrito à administração da plataforma</p> }
+    </header>
+
+    @if (facultyNotFound()) {
+      <p class="alert error" role="alert">Instituição não encontrada. Verifique o endereço de acesso informado pela sua faculdade.</p>
+    }
+    @if (info()) { <p class="alert info" role="status">{{ info() }}</p> }
+    @if (error()) { <p class="alert error" role="alert">{{ error() }}</p> }
+
+    @switch (step()) {
+      @case ('credentials') {
+        <form [formGroup]="credentials" (ngSubmit)="submitCredentials()" novalidate>
+          <mat-form-field class="full">
+            <mat-label>{{ isStudentLogin ? 'Matrícula ou nome de usuário' : 'Nome de usuário' }}</mat-label>
+            <input matInput formControlName="identifier" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+            <mat-icon matPrefix aria-hidden="true">person</mat-icon>
+            @if (isStudentLogin) { <mat-hint>Alunos: use o número de matrícula</mat-hint> }
+            @if (credentials.controls.identifier.touched && credentials.controls.identifier.invalid) { <mat-error>Informe o usuário ou matrícula</mat-error> }
+          </mat-form-field>
+          <mat-form-field class="full">
+            <mat-label>Senha</mat-label>
+            <input matInput [type]="showPassword() ? 'text' : 'password'" formControlName="password" autocomplete="current-password" required>
+            <mat-icon matPrefix aria-hidden="true">lock</mat-icon>
+            <button mat-icon-button matSuffix type="button" (click)="showPassword.set(!showPassword())"
+                    [attr.aria-label]="showPassword() ? 'Ocultar senha' : 'Mostrar senha'" [attr.aria-pressed]="showPassword()">
+              <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+            @if (credentials.controls.password.touched && credentials.controls.password.invalid) { <mat-error>Informe a senha</mat-error> }
+          </mat-form-field>
+          <button mat-flat-button class="full big" type="submit" [disabled]="loading() || facultyNotFound()">Entrar</button>
+          <div class="login-links">
+            <button mat-button type="button" (click)="step.set('forgot')">Esqueci minha senha</button>
+            <button mat-button type="button" (click)="step.set('help')">Ajuda para acesso</button>
+          </div>
+        </form>
+      }
+
+      @case ('setup') {
+        <section aria-labelledby="setup-title">
+          <h2 id="setup-title" class="step-title"><mat-icon aria-hidden="true">verified_user</mat-icon> Segurança da conta — configure seu autenticador</h2>
+          <p>Olá, <strong>{{ displayName() }}</strong>. Para proteger sua conta, a verificação em duas etapas é obrigatória.</p>
+          <ol class="setup-steps">
+            <li>Instale o <strong>Google Authenticator</strong> no celular.</li>
+            <li>Abra o aplicativo.</li>
+            <li>Toque em <strong>Adicionar conta</strong> (+).</li>
+            <li>Escolha <strong>Ler código QR</strong>.</li>
+            <li>Leia o QR Code abaixo — ou digite a chave manualmente.</li>
+          </ol>
+          @if (setup(); as s) {
+            <div class="qr-box">
+              <img [src]="s.qrCodeDataUrl" width="220" height="220" [alt]="'QR Code para adicionar a conta ' + s.accountLabel + ' no Google Authenticator'">
+              <div class="secret">
+                <span class="muted">Chave secreta (inserção manual, tipo “baseada no tempo”):</span>
+                <code class="secret-value" aria-label="Chave secreta">{{ s.secret }}</code>
+                <div class="row-actions">
+                  <button mat-stroked-button type="button" (click)="copySecret()"><mat-icon>content_copy</mat-icon> {{ copied() ? 'Copiada!' : 'Copiar chave' }}</button>
+                  <button mat-button type="button" (click)="generateSecret()" [disabled]="loading()"><mat-icon>autorenew</mat-icon> Gerar novo segredo</button>
+                </div>
+                <span class="muted small">Conta: {{ s.accountLabel }}</span>
+              </div>
+            </div>
+          }
+          <form [formGroup]="codeForm" (ngSubmit)="activate()" novalidate>
+            <mat-form-field class="full code-field">
+              <mat-label>Código de 6 dígitos exibido no aplicativo</mat-label>
+              <input matInput formControlName="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required>
+              <mat-hint>O código muda a cada 30 s ({{ secondsLeft() }} s)</mat-hint>
+              @if (codeForm.controls.code.touched && codeForm.controls.code.invalid) { <mat-error>Digite os 6 números</mat-error> }
+            </mat-form-field>
+            <button mat-flat-button class="full big" type="submit" [disabled]="loading() || !setup()">Validar e ativar</button>
+            <button mat-button type="button" class="full" (click)="restart()">Cancelar</button>
+          </form>
+        </section>
+      }
+
+      @case ('codes') {
+        <h2 class="step-title"><mat-icon aria-hidden="true">key</mat-icon> Autenticador ativado — códigos de recuperação</h2>
+        <app-recovery-codes [codes]="recoveryCodes()" [account]="setup()?.accountLabel ?? ''" (done)="finishActivation()" />
+      }
+
+      @case ('verify') {
+        <form [formGroup]="codeForm" (ngSubmit)="verify()" novalidate aria-labelledby="verify-title">
+          <h2 id="verify-title" class="step-title"><mat-icon aria-hidden="true">phonelink_lock</mat-icon> Verificação em duas etapas</h2>
+          <p>Abra o <strong>Google Authenticator</strong> e informe o código de 6 dígitos desta conta.</p>
+          <mat-form-field class="full code-field">
+            <mat-label>Código do autenticador</mat-label>
+            <input matInput formControlName="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required cdkFocusInitial>
+            <mat-hint>Renova em {{ secondsLeft() }} s</mat-hint>
+            @if (codeForm.controls.code.touched && codeForm.controls.code.invalid) { <mat-error>Digite os 6 números</mat-error> }
+          </mat-form-field>
+          <button mat-flat-button class="full big" type="submit" [disabled]="loading()">Verificar e entrar</button>
+          <div class="login-links">
+            <button mat-button type="button" (click)="step.set('recovery')">Perdi o acesso ao autenticador</button>
+            <button mat-button type="button" (click)="restart()">Voltar</button>
+          </div>
+        </form>
+      }
+
+      @case ('recovery') {
+        <form [formGroup]="recoveryForm" (ngSubmit)="useRecovery()" novalidate>
+          <h2 class="step-title"><mat-icon aria-hidden="true">key</mat-icon> Código de recuperação</h2>
+          <p>Informe um dos códigos de recuperação que você guardou ao ativar o autenticador. Cada código funciona uma única vez.</p>
+          <mat-form-field class="full">
+            <mat-label>Código de recuperação (ex.: ABCDE-FGH23)</mat-label>
+            <input matInput formControlName="recoveryCode" autocomplete="off" autocapitalize="characters" required>
+          </mat-form-field>
+          <button mat-flat-button class="full big" type="submit" [disabled]="loading()">Entrar com código de recuperação</button>
+          <p class="muted small">Sem códigos? Procure a Secretaria ou o Suporte/TI da sua instituição para recuperação de conta com validação de identidade.</p>
+          <button mat-button type="button" class="full" (click)="step.set('verify')">Voltar</button>
+        </form>
+      }
+
+      @case ('forgot') {
+        <section>
+          <h2 class="step-title"><mat-icon aria-hidden="true">help</mat-icon> Recuperação de senha</h2>
+          <p>Por segurança, a redefinição de senha é feita pela equipe autorizada da sua instituição (Secretaria ou Suporte/TI),
+            após validação da sua identidade. Você receberá uma senha temporária e deverá criar uma nova no primeiro acesso.</p>
+          <p class="muted small">Recurso de redefinição por e-mail: ainda não integrado (depende da configuração do provedor de e-mail).</p>
+          <button mat-flat-button class="full" type="button" (click)="step.set('credentials')">Voltar ao login</button>
+        </section>
+      }
+
+      @case ('help') {
+        <section>
+          <h2 class="step-title"><mat-icon aria-hidden="true">support_agent</mat-icon> Ajuda para acesso</h2>
+          <ul class="help-list">
+            <li><strong>Alunos</strong> entram com o número de matrícula e a senha.</li>
+            <li><strong>Professores e colaboradores</strong> entram com o nome de usuário.</li>
+            <li>No primeiro acesso é obrigatório configurar o <strong>Google Authenticator</strong>.</li>
+            <li>Conta bloqueada por tentativas? Aguarde 15 minutos ou procure o Suporte/TI.</li>
+            <li>Trocou de celular? Use um código de recuperação e, depois, “Gerenciar autenticador” no seu perfil.</li>
+          </ul>
+          <button mat-flat-button class="full" type="button" (click)="step.set('credentials')">Voltar ao login</button>
+        </section>
+      }
+    }
+  </section>
+</main>

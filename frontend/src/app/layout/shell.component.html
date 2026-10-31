@@ -1,0 +1,69 @@
+<mat-sidenav-container class="shell" autosize>
+  <mat-sidenav class="sidebar" [class.collapsed]="collapsed()" [mode]="mobile() ? 'over' : 'side'" [opened]="opened()"
+               (closedStart)="mobile() && opened.set(false)" role="navigation" aria-label="Menu principal">
+    <div class="sidebar-brand">
+      @if (auth.profile()?.faculty?.logoUrl) {
+        <img [src]="auth.profile()!.faculty!.logoUrl" alt="" class="brand-logo">
+      } @else { <mat-icon class="brand-logo-icon" aria-hidden="true">school</mat-icon> }
+      @if (!collapsed()) {
+        <div class="brand-text"><strong>{{ auth.profile()?.faculty?.name ?? 'ERP Plataforma' }}</strong><span>ERP Universitário</span></div>
+      }
+    </div>
+    <nav>
+      @for (g of nav(); track g.title) {
+        @if (!collapsed()) { <h3 class="nav-group">{{ g.title }}</h3> } @else { <mat-divider /> }
+        @for (i of g.items; track i.link) {
+          <a class="nav-item" [routerLink]="i.link" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: i.link === '/plataforma' }"
+             [matTooltip]="collapsed() ? i.label : ''" matTooltipPosition="right" [attr.aria-label]="collapsed() ? i.label : null">
+            <mat-icon aria-hidden="true">{{ i.icon }}</mat-icon>
+            @if (!collapsed()) { <span>{{ i.label }}</span> }
+          </a>
+        }
+      }
+    </nav>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <mat-toolbar class="topbar">
+      <button mat-icon-button (click)="toggleMenu()" [attr.aria-label]="mobile() ? 'Abrir menu' : (collapsed() ? 'Expandir menu' : 'Recolher menu')">
+        <mat-icon>{{ mobile() ? 'menu' : (collapsed() ? 'menu_open' : 'menu') }}</mat-icon>
+      </button>
+      <nav class="breadcrumbs" aria-label="Você está em">
+        @for (c of crumbs(); track c.link; let last = $last) {
+          @if (!last) { <a [routerLink]="c.link">{{ c.label }}</a><mat-icon aria-hidden="true">chevron_right</mat-icon> }
+          @else { <span aria-current="page">{{ c.label }}</span> }
+        }
+      </nav>
+      <span class="spacer"></span>
+      <button mat-icon-button [matMenuTriggerFor]="notif" (menuOpened)="loadNotifications()" aria-label="Notificações">
+        <mat-icon [matBadge]="unread() || null" matBadgeColor="warn" matBadgeSize="small" aria-hidden="false">notifications</mat-icon>
+      </button>
+      <mat-menu #notif="matMenu" class="notif-menu" xPosition="before">
+        <div class="notif-head" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+          <strong>Notificações</strong>
+          <button mat-button (click)="markAllRead()" [disabled]="!unread()">Marcar todas como lidas</button>
+        </div>
+        @for (n of notifications(); track n.id) {
+          <div class="notif-item" [class.unread]="!n.readAt">
+            <strong>{{ n.title }}</strong><span>{{ n.body }}</span><small>{{ n.createdAt | date:'short' }}</small>
+          </div>
+        } @empty { <p class="notif-empty">Nenhuma notificação.</p> }
+      </mat-menu>
+      <button mat-button [matMenuTriggerFor]="userMenu" class="user-btn" aria-label="Menu do usuário">
+        <span class="avatar" aria-hidden="true">{{ initials() }}</span>
+        <span class="user-name">{{ auth.profile()?.socialName || auth.profile()?.fullName }}</span>
+        <mat-icon iconPositionEnd aria-hidden="true">expand_more</mat-icon>
+      </button>
+      <mat-menu #userMenu="matMenu" xPosition="before">
+        <a mat-menu-item routerLink="/perfil"><mat-icon>person</mat-icon> Meu perfil</a>
+        <a mat-menu-item routerLink="/perfil" [queryParams]="{ aba: 'senha' }"><mat-icon>password</mat-icon> Alterar senha</a>
+        <a mat-menu-item routerLink="/perfil" [queryParams]="{ aba: 'autenticador' }"><mat-icon>phonelink_lock</mat-icon> Gerenciar autenticador</a>
+        <mat-divider />
+        <button mat-menu-item (click)="auth.logout()"><mat-icon>logout</mat-icon> Sair</button>
+      </mat-menu>
+    </mat-toolbar>
+    <main id="conteudo" class="content" tabindex="-1">
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

@@ -16,3 +16,4 @@ frontend/.angular/
 *.env
 !.env.example
 firebase-service-account*.json
+frontend/e2e-screens/

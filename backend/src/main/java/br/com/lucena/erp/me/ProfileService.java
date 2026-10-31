@@ -138,7 +138,7 @@ public class ProfileService {
     /** Troca de dispositivo, passo 1: exige step-up; gera novo segredo pendente (o atual continua válido). */
     @Transactional
     public MfaEnrollment startRotation(AuthPrincipal p, StepUpOnly req, ClientInfo client) {
-        User u = load(p);
+        User u = users.lockById(p.userId()).orElseThrow(() -> ApiException.notFound("Usuário"));
         consumeStepUp(u, req.stepUpToken(), AuthChallenge.Purpose.STEPUP_MFA_ROTATE);
         String label = u.getFacultyId() == null ? u.getUsername() + " (Master)"
                 : u.getUsername() + " - " + faculties.findById(u.getFacultyId()).map(f -> f.getSlug()).orElse("");

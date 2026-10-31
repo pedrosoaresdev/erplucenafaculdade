@@ -1,0 +1,11 @@
+// Tema institucional: azul-marinho / azul institucional / branco / cinza claro
+@use '@angular/material' as mat;
+
+html {
+  color-scheme: light;
+  @include mat.theme((
+    color: (primary: mat.$azure-palette, tertiary: mat.$blue-palette),
+    typography: Inter,
+    density: 0,
+  ));
+}

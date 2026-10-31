@@ -85,6 +85,26 @@ class AuthFlowIT extends IntegrationTestBase {
     }
 
     @Test
+    void concurrentSetupRequestsAreSerialized() throws Exception {
+        String[] u = freshFaculty();
+        String ch = body(loginStep1(u[0], u[1], u[2])).get("challengeToken").asText();
+        var pool = java.util.concurrent.Executors.newFixedThreadPool(4);
+        try {
+            var futures = new java.util.ArrayList<java.util.concurrent.Future<Integer>>();
+            for (int i = 0; i < 4; i++) {
+                futures.add(pool.submit(() -> postJson("/api/auth/mfa/setup", Map.of("challengeToken", ch)).getResponse().getStatus()));
+            }
+            for (var f : futures) assertThat(f.get()).isEqualTo(200);
+        } finally {
+            pool.shutdown();
+        }
+        Integer pending = jdbc.queryForObject("""
+                select count(*) from user_authenticator_secrets s join users u on u.id = s.user_id
+                join faculties f on f.id = u.faculty_id where f.slug = ? and s.status = 'PENDING'""", Integer.class, u[0]);
+        assertThat(pending).isEqualTo(1);
+    }
+
+    @Test
     void subsequentLoginsAskForCodeWithoutNewQrAndRejectReplay() throws Exception {
         String[] u = readyUser();
         JsonNode step = body(loginStep1(u[0], u[1], u[2]));

@@ -93,7 +93,7 @@ public class AuthService {
     @Transactional
     public MfaSetupResponse setupMfa(String challengeToken) {
         AuthChallenge ch = challenges.lockUsable(challengeToken, SETUP);
-        User user = users.findById(ch.getUserId()).orElseThrow();
+        User user = users.lockById(ch.getUserId()).orElseThrow();
         if (user.isMfaEnabled()) {
             throw ApiException.conflict("MFA_ALREADY_ACTIVE", "O autenticador já está configurado");
         }

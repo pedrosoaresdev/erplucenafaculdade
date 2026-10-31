@@ -19,6 +19,11 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     Optional<User> findByIdAndFacultyId(UUID id, UUID facultyId);
 
+    /** Serializa operações concorrentes sobre o mesmo usuário (ex.: geração de segredo TOTP). */
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from User u where u.id = :id")
+    Optional<User> lockById(@Param("id") UUID id);
+
     boolean existsByPlatformAdminTrue();
 
     long countByFacultyId(UUID facultyId);

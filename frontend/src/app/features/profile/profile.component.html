@@ -1,0 +1,181 @@
+<header class="page-header">
+  <div class="profile-head">
+    @if (profile()?.photoUrl) { <img class="avatar-lg" [src]="profile()!.photoUrl" [alt]="'Foto de ' + profile()!.fullName"> }
+    @else { <span class="avatar-lg" aria-hidden="true"><mat-icon>person</mat-icon></span> }
+    <div>
+      <h1>{{ profile()?.socialName || profile()?.fullName }}</h1>
+      <p class="muted">{{ profile()?.username }} · {{ profile()?.roles?.join(', ') || (profile()?.platformAdmin ? 'Administrador Master' : '') }}
+        @if (profile()?.faculty) { · {{ profile()!.faculty!.name }} }</p>
+    </div>
+  </div>
+</header>
+
+@if (mandatory() && profile()?.mustChangePassword) {
+  <p class="alert warn" role="alert"><mat-icon aria-hidden="true">lock_reset</mat-icon>
+    Você está usando uma senha temporária. Defina uma nova senha para liberar o acesso aos módulos.</p>
+}
+@if (error()) { <p class="alert error" role="alert">{{ error() }}</p> }
+
+<mat-tab-group [selectedIndex]="tab()" (selectedIndexChange)="onTab($event)" mat-stretch-tabs="false" animationDuration="150ms">
+  <!-- ===================== DADOS ===================== -->
+  <mat-tab label="Dados pessoais">
+    <div class="tab-body two-col">
+      <mat-card>
+        <mat-card-header><mat-card-title>Informações da conta</mat-card-title></mat-card-header>
+        <mat-card-content>
+          <dl class="info-list">
+            <dt>Nome</dt><dd>{{ profile()?.fullName }}</dd>
+            <dt>Usuário</dt><dd>{{ profile()?.username }}</dd>
+            @if (profile()?.registration) { <dt>Matrícula</dt><dd>{{ profile()!.registration }}</dd> }
+            <dt>Cargo(s)</dt><dd>{{ profile()?.roles?.join(', ') || '—' }}</dd>
+            <dt>Instituição</dt><dd>{{ profile()?.faculty?.name ?? 'Plataforma' }}</dd>
+            <dt>Situação</dt><dd><span class="badge ok">Ativa</span></dd>
+            <dt>Cadastro</dt><dd>{{ profile()?.createdAt | date:'dd/MM/yyyy' }}</dd>
+          </dl>
+        </mat-card-content>
+      </mat-card>
+      <mat-card>
+        <mat-card-header><mat-card-title>Dados editáveis</mat-card-title></mat-card-header>
+        <mat-card-content>
+          <form [formGroup]="dataForm" (ngSubmit)="saveData()">
+            <mat-form-field class="full"><mat-label>Nome social</mat-label><input matInput formControlName="socialName"></mat-form-field>
+            <mat-form-field class="full"><mat-label>Telefone</mat-label><input matInput formControlName="phone" type="tel" autocomplete="tel"></mat-form-field>
+            <mat-form-field class="full"><mat-label>URL da foto (https)</mat-label><input matInput formControlName="photoUrl" type="url">
+              <mat-hint>Upload de arquivo será integrado com o Firebase Storage (ainda não integrado).</mat-hint></mat-form-field>
+            <button mat-flat-button type="submit" [disabled]="dataForm.invalid || loading()">Salvar</button>
+          </form>
+          <form [formGroup]="emailForm" (ngSubmit)="saveEmail()" class="mt">
+            <mat-form-field class="full"><mat-label>E-mail</mat-label><input matInput formControlName="email" type="email" autocomplete="email">
+              <mat-hint>Dado sensível: exige senha + código do autenticador.</mat-hint></mat-form-field>
+            <button mat-stroked-button type="submit" [disabled]="emailForm.invalid">Alterar e-mail</button>
+          </form>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </mat-tab>
+
+  <!-- ===================== SENHA ===================== -->
+  <mat-tab label="Alterar senha">
+    <div class="tab-body narrow">
+      <mat-card>
+        <mat-card-header><mat-card-title>Alterar senha</mat-card-title>
+          <mat-card-subtitle>Etapa {{ pwdStage() }} de 2 — {{ pwdStage() === 1 ? 'confirme sua identidade' : 'defina a nova senha' }}</mat-card-subtitle></mat-card-header>
+        <mat-card-content>
+          @if (pwdStage() === 1) {
+            <form [formGroup]="authForm" (ngSubmit)="authenticate()" novalidate>
+              <mat-form-field class="full"><mat-label>Senha atual</mat-label>
+                <input matInput type="password" formControlName="currentPassword" autocomplete="current-password" required></mat-form-field>
+              <mat-form-field class="full"><mat-label>Código de 6 dígitos do Google Authenticator</mat-label>
+                <input matInput formControlName="totpCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" required>
+                @if (authForm.controls.totpCode.touched && authForm.controls.totpCode.invalid) { <mat-error>Digite os 6 números</mat-error> }</mat-form-field>
+              <button mat-flat-button class="full" type="submit" [disabled]="loading()">Continuar</button>
+            </form>
+          } @else {
+            <form [formGroup]="newPwdForm" (ngSubmit)="confirmPassword()" novalidate>
+              <mat-form-field class="full"><mat-label>Nova senha</mat-label>
+                <input matInput type="password" formControlName="newPassword" autocomplete="new-password" required>
+                @if (newPwdForm.controls.newPassword.touched && newPwdForm.controls.newPassword.hasError('minlength')) { <mat-error>Mínimo de 8 caracteres</mat-error> }
+              </mat-form-field>
+              <app-password-strength [password]="newPwdValue()" />
+              <mat-form-field class="full"><mat-label>Repetir nova senha</mat-label>
+                <input matInput type="password" formControlName="confirmPassword" autocomplete="new-password" required></mat-form-field>
+              @if (newPwdForm.hasError('mismatch') && newPwdForm.controls.confirmPassword.touched) { <p class="field-error" role="alert">As senhas não coincidem.</p> }
+              <ul class="rules muted small">
+                <li>Mínimo de 8 caracteres; diferente da senha atual.</li>
+                <li>Senhas muito comuns ou que contenham seu usuário/matrícula são recusadas.</li>
+                <li>Após a alteração, todas as sessões serão encerradas.</li>
+              </ul>
+              <button mat-flat-button class="full big" type="submit" [disabled]="loading() || newPwdForm.invalid">Confirmar alteração de senha</button>
+              <button mat-button class="full" type="button" (click)="pwdStage.set(1)">Voltar</button>
+            </form>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </mat-tab>
+
+  <!-- ===================== AUTENTICADOR ===================== -->
+  <mat-tab label="Gerenciar autenticador">
+    <div class="tab-body narrow">
+      @if (newCodes(); as codes) {
+        <mat-card><mat-card-header><mat-card-title>Novos códigos de recuperação</mat-card-title></mat-card-header>
+          <mat-card-content><app-recovery-codes [codes]="codes" [account]="profile()?.username ?? ''" (done)="newCodes.set(null)" /></mat-card-content></mat-card>
+      } @else if (rotation(); as r) {
+        <mat-card>
+          <mat-card-header><mat-card-title>Cadastrar novo dispositivo</mat-card-title></mat-card-header>
+          <mat-card-content>
+            <p>Leia o QR Code com o Google Authenticator do <strong>novo</strong> celular. O autenticador atual continua válido até a confirmação.</p>
+            <div class="qr-box">
+              <img [src]="r.qrCodeDataUrl" width="200" height="200" [alt]="'QR Code do novo autenticador para ' + r.accountLabel">
+              <div class="secret"><code class="secret-value">{{ r.secret }}</code>
+                <button mat-stroked-button type="button" (click)="copy(r.secret)"><mat-icon>content_copy</mat-icon> Copiar chave</button></div>
+            </div>
+            <mat-form-field class="full"><mat-label>Código exibido no NOVO dispositivo</mat-label>
+              <input matInput [formControl]="rotationCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></mat-form-field>
+            <button mat-flat-button type="button" (click)="confirmRotation()" [disabled]="rotationCode.invalid || loading()">Validar e ativar novo dispositivo</button>
+            <button mat-button type="button" (click)="rotation.set(null)">Cancelar</button>
+          </mat-card-content>
+        </mat-card>
+      } @else {
+        <mat-card>
+          <mat-card-header><mat-card-title>Google Authenticator</mat-card-title></mat-card-header>
+          <mat-card-content>
+            <dl class="info-list">
+              <dt>Situação</dt><dd>@if (mfa()?.enabled) { <span class="badge ok">Ativo</span> } @else { <span class="badge warn">Inativo</span> }</dd>
+              <dt>Ativado em</dt><dd>{{ mfa()?.activatedAt | date:'short' }}</dd>
+              <dt>Códigos de recuperação restantes</dt><dd>{{ mfa()?.recoveryCodesRemaining ?? '—' }}</dd>
+            </dl>
+            <div class="stack-actions">
+              <button mat-flat-button type="button" (click)="startRotation()"><mat-icon>phonelink_setup</mat-icon> Trocar de dispositivo</button>
+              <button mat-stroked-button type="button" (click)="regenerateCodes()"><mat-icon>key</mat-icon> Gerar novos códigos de recuperação</button>
+              <button mat-stroked-button type="button" class="danger-text" (click)="disableMfa()"><mat-icon>phonelink_erase</mat-icon> Desativar autenticador</button>
+            </div>
+            <p class="muted small">Todas as operações exigem senha atual + código do autenticador e são registradas na auditoria.</p>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+  </mat-tab>
+
+  <!-- ===================== SESSÕES ===================== -->
+  <mat-tab label="Dispositivos e sessões">
+    <div class="tab-body">
+      <div class="toolbar-row">
+        <h2 class="section-title">Sessões ativas</h2>
+        <button mat-stroked-button type="button" (click)="revokeOthers()" [disabled]="sessions().length < 2"><mat-icon>logout</mat-icon> Encerrar outras sessões</button>
+      </div>
+      <ul class="session-list">
+        @for (s of sessions(); track s.id) {
+          <li>
+            <mat-icon aria-hidden="true">{{ s.deviceLabel.includes('Android') || s.deviceLabel.includes('iOS') ? 'smartphone' : 'computer' }}</mat-icon>
+            <div><strong>{{ s.deviceLabel }}</strong> @if (s.current) { <span class="badge ok">Esta sessão</span> }
+              <span class="muted small">IP {{ s.ipAddress }} · início {{ s.createdAt | date:'short' }} · última atividade {{ s.lastSeenAt | date:'short' }}</span></div>
+            <button mat-button type="button" (click)="revoke(s)">Encerrar</button>
+          </li>
+        } @empty { <li class="muted">Nenhuma sessão ativa.</li> }
+      </ul>
+    </div>
+  </mat-tab>
+
+  <!-- ===================== ACESSOS ===================== -->
+  <mat-tab label="Histórico de acessos">
+    <div class="tab-body">
+      <table class="data-table responsive">
+        <caption class="sr-only">Histórico de acessos da conta</caption>
+        <thead><tr><th scope="col">Data</th><th scope="col">Evento</th><th scope="col">Resultado</th><th scope="col">IP</th><th scope="col">Detalhe</th></tr></thead>
+        <tbody>
+          @for (a of access()?.content ?? []; track $index) {
+            <tr>
+              <td data-label="Data">{{ a.createdAt | date:'short' }}</td>
+              <td data-label="Evento">{{ eventLabel(a.event) }}</td>
+              <td data-label="Resultado">@if (a.success) { <span class="badge ok">Sucesso</span> } @else { <span class="badge error">Falha</span> }</td>
+              <td data-label="IP">{{ a.ipAddress }}</td>
+              <td data-label="Detalhe">{{ a.detail ?? '—' }}</td>
+            </tr>
+          } @empty { <tr><td colspan="5" class="muted">Sem registros.</td></tr> }
+        </tbody>
+      </table>
+      @if (access(); as p) { <mat-paginator [length]="p.totalElements" [pageSize]="p.size" [pageIndex]="p.page" [hidePageSize]="true" (page)="pageAccess($event)" /> }
+    </div>
+  </mat-tab>
+</mat-tab-group>
