@@ -1,0 +1,48 @@
+# Execução local completa: PostgreSQL + backend + frontend.
+#   1) copie .env.example para .env e gere as chaves (instruções no arquivo)
+#   2) docker compose up --build
+#   3) abra http://localhost:8081/login
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: erp
+      POSTGRES_USER: erp
+      POSTGRES_PASSWORD: ${ERP_DB_PASSWORD:?defina ERP_DB_PASSWORD no .env}
+    volumes:
+      - erp-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erp -d erp"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build: ./backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ERP_DB_URL: jdbc:postgresql://postgres:5432/erp
+      ERP_DB_USER: erp
+      ERP_DB_PASSWORD: ${ERP_DB_PASSWORD}
+      ERP_JWT_SECRET: ${ERP_JWT_SECRET:?defina ERP_JWT_SECRET no .env}
+      ERP_ENCRYPTION_KEY: ${ERP_ENCRYPTION_KEY:?defina ERP_ENCRYPTION_KEY no .env}
+      ERP_COOKIE_SECURE: ${ERP_COOKIE_SECURE:-false}
+      ERP_CORS_ORIGINS: http://localhost:8081
+      ERP_TOTP_ISSUER: ${ERP_TOTP_ISSUER:-ERP Lucena}
+      ERP_BOOTSTRAP_MASTER_USERNAME: ${ERP_BOOTSTRAP_MASTER_USERNAME:-master}
+      ERP_BOOTSTRAP_MASTER_PASSWORD: ${ERP_BOOTSTRAP_MASTER_PASSWORD:?defina ERP_BOOTSTRAP_MASTER_PASSWORD no .env}
+      ERP_BOOTSTRAP_MASTER_EMAIL: ${ERP_BOOTSTRAP_MASTER_EMAIL:-master@localhost}
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "8081:80"
+    restart: unless-stopped
+
+volumes:
+  erp-db:

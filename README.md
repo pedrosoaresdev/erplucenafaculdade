@@ -24,7 +24,34 @@ administrativa e institucional, com isolamento entre faculdades e verificação 
 
 Módulos ainda não integrados aparecem na tela inicial como **"não integrado"** — não há botões decorativos.
 
-## Executando localmente
+## Como acessar (forma mais simples: Docker)
+
+Pré-requisito: [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado e aberto.
+
+```bash
+git clone https://github.com/pedrosoaresdev/erplucenafaculdade.git
+```
+
+```bash
+cd erplucenafaculdade
+```
+
+1. Copie `.env.example` para `.env` e preencha as chaves e a senha do Master (instruções dentro do arquivo).
+2. Suba tudo (banco, backend e frontend):
+
+```bash
+docker compose up --build
+```
+
+3. Abra **http://localhost:8081/login**, entre com `master` e a senha definida no `.env`, e configure o
+   Google Authenticator lendo o QR Code.
+4. Em **Faculdades › Nova faculdade**, crie a instituição com o Diretor Geral inicial. O endereço de login
+   dela será `http://localhost:8081/f/<identificador>/login`.
+
+Os dados ficam no volume `erp-db` (persistem entre reinicializações). Para publicar na internet, use HTTPS e
+`ERP_COOKIE_SECURE=true`.
+
+## Executando localmente (desenvolvimento)
 
 Pré-requisitos: Java 21, Maven 3.9+, Node 22+, PostgreSQL 16.
 

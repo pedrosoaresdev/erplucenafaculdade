@@ -13,11 +13,21 @@ export function totp(base32, at = Date.now()) {
   return String((h.readUInt32BE(o) & 0x7fffffff) % 1_000_000).padStart(6, '0');
 }
 
-/** Aguarda a próxima janela de 30 s (o servidor rejeita reutilização de código). */
+const lastStep = new Map();
+
+/** Código ainda não usado para este segredo (o servidor rejeita reutilização); espera a próxima janela só se preciso. */
 export async function freshCode(base32) {
-  const wait = 30_000 - (Date.now() % 30_000) + 300;
-  await new Promise(r => setTimeout(r, wait));
+  const step = () => Math.floor(Date.now() / 30_000);
+  if ((lastStep.get(base32) ?? -1) >= step()) {
+    await new Promise(r => setTimeout(r, 30_000 - (Date.now() % 30_000) + 300));
+  }
+  lastStep.set(base32, step());
   return totp(base32);
+}
+
+/** Registra um código usado fora de freshCode (ex.: ativação). */
+export function markUsed(base32) {
+  lastStep.set(base32, Math.floor(Date.now() / 30_000));
 }
 
 /** CPF válido determinístico para os testes. */

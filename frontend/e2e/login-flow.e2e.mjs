@@ -6,7 +6,7 @@
  */
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
-import { cpf, freshCode, totp } from './totp.mjs';
+import { cpf, freshCode, markUsed, totp } from './totp.mjs';
 
 const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:4200';
 const OUT = process.argv[2] ?? 'e2e-screens';
@@ -24,6 +24,7 @@ async function setupAuthenticator(page, name) {
   const secret = (await page.locator('.secret-value').first().innerText()).replace(/\s/g, '');
   if (name) await shot(page, name);
   await page.getByLabel('Código de 6 dígitos exibido no aplicativo').fill(totp(secret));
+  markUsed(secret);
   await page.getByRole('button', { name: 'Validar e ativar' }).click();
   await page.getByText('códigos de recuperação', { exact: false }).first().waitFor();
   const codes = await page.locator('.codes code').allInnerTexts();
@@ -141,6 +142,7 @@ try {
   async function select(scope, label, option) {
     await scope.getByRole('combobox', { name: label }).click();
     await page.getByRole('option', { name: option }).click();
+    await page.getByRole('listbox').waitFor({ state: 'detached', timeout: 5000 });
   }
   await page.goto(`${BASE}/academico/disciplinas`);
   for (const [code, name] of [['LOG1', 'Lógica de Programação'], ['BD1', 'Banco de Dados']]) {
@@ -311,6 +313,7 @@ try {
   console.log('\nE2E OK');
 } catch (e) {
   console.error('E2E FALHOU:', e);
+  for (const ctx of browser.contexts()) for (const p of ctx.pages()) await p.screenshot({ path: `${OUT}/falha-${Date.now()}.png`, fullPage: true }).catch(() => {});
   process.exitCode = 1;
 } finally {
   await browser.close();
