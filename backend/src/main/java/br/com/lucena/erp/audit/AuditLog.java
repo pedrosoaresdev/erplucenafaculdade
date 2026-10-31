@@ -10,7 +10,9 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
+/** Somente-inserção: o Hibernate nunca emite UPDATE (o banco também bloqueia por trigger). */
 @Entity
+@org.hibernate.annotations.Immutable
 @Table(name = "audit_logs")
 @Getter
 @Setter

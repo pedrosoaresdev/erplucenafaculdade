@@ -31,6 +31,7 @@ public class UserAdminService {
     private final FacultyRepository faculties;
     private final PasswordEncoder encoder;
     private final AccessGuard guard;
+    private final AccountProvisioner provisioner;
     private final MfaService mfa;
     private final RecoveryCodeService recoveryCodes;
     private final SessionService sessions;
@@ -55,25 +56,13 @@ public class UserAdminService {
     @Transactional
     public CreatedUser create(UUID facultyId, CreateUser req, AuthPrincipal actor, ClientInfo client) {
         faculties.findById(facultyId).orElseThrow(() -> ApiException.notFound("Faculdade"));
-        if (users.findInFaculty(facultyId, req.username()).isPresent()) {
-            throw ApiException.conflict("USERNAME_IN_USE", "Nome de usuário já utilizado nesta instituição");
-        }
         Set<Role> rs = loadRoles(facultyId, req.roleIds());
         guard.ensureCanGrant(actor, rs);
-        String temp = Tokens.temporaryPassword();
-        User u = new User();
-        u.setFacultyId(facultyId);
-        u.setUsername(req.username());
-        u.setFullName(req.fullName().trim());
-        u.setEmail(req.email().trim().toLowerCase());
-        u.setPhone(req.phone());
-        u.setPasswordHash(encoder.encode(temp));
-        u.setMustChangePassword(true);
-        u.setRoles(rs);
-        users.save(u);
+        AccountProvisioner.Provisioned p = provisioner.create(facultyId, req.username(), req.fullName(), req.email(), req.phone(), rs);
+        User u = p.user();
         audit.record(actor, facultyId, "USER_CREATED", "USER", u.getId(),
                 Map.of("username", u.getUsername(), "roles", rs.stream().map(Role::getCode).sorted().toList()), client);
-        return new CreatedUser(UserView.of(u, clock.instant()), temp);
+        return new CreatedUser(UserView.of(u, clock.instant()), p.temporaryPassword());
     }
 
     @Transactional

@@ -142,6 +142,22 @@ public abstract class IntegrationTestBase {
         return login(faculty, username, next);
     }
 
+    private static int cpfSeq = 0;
+
+    /** CPF válido gerado sequencialmente. */
+    protected static synchronized String nextCpf() {
+        String base = String.format("%09d", 100_000_000 + (++cpfSeq) * 7_919 + (int) (System.nanoTime() % 997));
+        int d1 = cpfDigit(base, 10);
+        int d2 = cpfDigit(base + d1, 11);
+        return base + d1 + d2;
+    }
+
+    private static int cpfDigit(String s, int weight) {
+        int sum = 0;
+        for (int i = 0; i < s.length(); i++) sum += (s.charAt(i) - '0') * (weight - i);
+        return (sum * 10) % 11 % 10;
+    }
+
     private static int cnpjSeq = 0;
 
     /** CNPJ válido gerado a partir de uma base sequencial. */
