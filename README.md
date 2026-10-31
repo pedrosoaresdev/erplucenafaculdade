@@ -37,8 +37,11 @@ git clone https://github.com/pedrosoaresdev/erplucenafaculdade.git
 cd erplucenafaculdade
 ```
 
-1. Copie `.env.example` para `.env` e preencha as duas chaves (instruções dentro do arquivo). O e-mail do dono
-   (`ERP_OWNER_EMAIL`) já vem preenchido.
+1. Gere o arquivo de configuração `.env` (cria as chaves secretas automaticamente; o e-mail do dono já vem preenchido):
+   - **Windows** (PowerShell, na pasta do projeto): `powershell -ExecutionPolicy Bypass -File .\gerar-env.ps1`
+   - **macOS/Linux**: `./gerar-env.sh`
+
+   Guarde uma cópia do `.env` em local seguro: sem a `ERP_ENCRYPTION_KEY`, os autenticadores precisam ser reconfigurados.
 2. Suba tudo (banco, backend e frontend):
 
 ```bash
