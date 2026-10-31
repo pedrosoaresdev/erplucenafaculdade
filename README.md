@@ -66,7 +66,8 @@ cd frontend && npm test -- --watch=false
 ```
 
 ```bash
-# Ponta a ponta no navegador (Playwright): recria o banco dev, sobe o backend e testa o fluxo completo.
+# Ponta a ponta no navegador (Playwright; na primeira vez: npx playwright install chromium).
+# Recria o banco dev, sobe o backend e testa o fluxo completo.
 # Requer `npm start` rodando em :4200.
 cd frontend && ./e2e/reset-and-run.sh e2e-screens
 ```
