@@ -1,0 +1,10 @@
+# Perfil de desenvolvimento local. NUNCA usar estas chaves em produção.
+erp:
+  security:
+    jwt-secret: ZGV2LW9ubHktand0LXNlY3JldC1jaGFuZ2UtbWUtMzJieXRlcyEhIQ==
+    encryption-key: ZGV2LW9ubHktYWVzLWtleS0zMi1ieXRlcy1sb25nISE=
+    cookie-secure: false
+  bootstrap:
+    master-username: ${ERP_BOOTSTRAP_MASTER_USERNAME:master}
+    master-password: ${ERP_BOOTSTRAP_MASTER_PASSWORD:Lucena@Plataforma#2026}
+    master-email: ${ERP_BOOTSTRAP_MASTER_EMAIL:master@erplucena.local}
