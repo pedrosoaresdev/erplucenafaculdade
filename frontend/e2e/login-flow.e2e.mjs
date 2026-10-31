@@ -148,7 +148,7 @@ try {
     await page.getByLabel('Nome', { exact: true }).fill(name);
     await page.getByLabel('Carga horária (h)').fill('80');
     await page.getByRole('button', { name: 'Salvar' }).click();
-    await page.getByRole('cell', { name: new RegExp(name) }).waitFor();
+    await page.getByRole('cell', { name: `${name} ${code}`, exact: true }).waitFor();
   }
   await page.goto(`${BASE}/academico/cursos`);
   await page.getByRole('button', { name: 'Novo curso' }).click();
@@ -210,7 +210,7 @@ try {
   await form.getByLabel('Início').fill('19:00');
   await form.getByLabel('Término').fill('20:40');
   await form.getByRole('button', { name: 'Salvar' }).click();
-  await page.getByRole('cell', { name: '19:00 – 20:40' }).waitFor();
+  await page.getByRole('cell', { name: '19:00 – 20:40', exact: true }).waitFor();
   // Choque de horário dentro da própria turma é recusado pelo servidor
   await page.getByRole('button', { name: 'Ofertar disciplina' }).click();
   form = page.getByRole('dialog');
@@ -223,7 +223,7 @@ try {
   await form.getByLabel('Início').fill('20:40');
   await form.getByLabel('Término').fill('22:20');
   await form.getByRole('button', { name: 'Salvar' }).click();
-  await page.getByRole('cell', { name: '20:40 – 22:20' }).waitFor();
+  await page.getByRole('cell', { name: '20:40 – 22:20', exact: true }).waitFor();
   step('turma criada; oferta com professor/horário e choque de horário bloqueado');
 
   await page.goto(`${BASE}/academico/alunos`);
@@ -241,14 +241,14 @@ try {
   const studentTemp = (await page.locator('.secret-value').innerText()).trim();
   if (!/^\d{4}00001$/.test(registration)) throw new Error('matrícula inesperada: ' + registration);
   await page.getByRole('button', { name: 'Concluir' }).click();
-  await page.getByRole('cell', { name: registration }).waitFor();
+  await page.getByRole('cell', { name: registration, exact: true }).waitFor();
   await shot(page, '18-alunos');
 
   await page.goto(`${BASE}/academico/turmas`);
   await page.getByRole('link', { name: 'ADS1N' }).click();
   await page.getByLabel('Incluir aluno (nome, matrícula ou CPF)').fill('Beat');
   await page.getByRole('option', { name: new RegExp(registration) }).click();
-  await page.getByRole('cell', { name: 'Beatriz Souza' }).waitFor();
+  await page.getByRole('cell', { name: 'Beatriz Souza', exact: true }).waitFor();
   await page.getByText('1 / 40').waitFor();
   await shot(page, '19-turma-detalhe');
   step(`aluno cadastrado (matrícula ${registration}) e incluído na turma`);
