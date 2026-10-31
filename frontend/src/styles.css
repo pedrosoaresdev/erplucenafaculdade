@@ -189,7 +189,8 @@ fieldset { border: 1px solid var(--border); border-radius: 10px; padding: 8px 16
 .data-table th { text-align: left; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); background: #f8fafc; padding: 12px; border-bottom: 1px solid var(--border); }
 .data-table td { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
 .data-table tbody tr:hover { background: #fafcff; }
-.data-table td.actions { text-align: right; width: 48px; }
+.data-table td.actions { text-align: right; width: 1%; white-space: nowrap; }
+.data-table td strong + .muted { margin-left: 6px; }
 
 /* ---------- Gráfico de barras ---------- */
 .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 180px; padding-top: 8px; overflow: hidden; }
