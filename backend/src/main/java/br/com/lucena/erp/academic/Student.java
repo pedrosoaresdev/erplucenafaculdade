@@ -20,6 +20,7 @@ public class Student {
     private UUID id;
     private UUID facultyId;
     private UUID userId;
+    private UUID courseId;
     private String registration;
     private String fullName;
     private String socialName;

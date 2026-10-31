@@ -33,9 +33,9 @@ public class PeopleController {
     @GetMapping("/students")
     @PreAuthorize("hasAnyAuthority('STUDENT_VIEW','STUDENT_MANAGE','ENROLLMENT_MANAGE','PLATFORM_ADMIN')")
     public PageResponse<StudentView> students(@RequestParam(required = false) UUID facultyId, @RequestParam(required = false) String q,
-                                              @RequestParam(required = false) Student.Status status,
+                                              @RequestParam(required = false) Student.Status status, @RequestParam(required = false) UUID courseId,
                                               @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
-        return people.searchStudents(fid(facultyId), q, status, page, size, CurrentUser.get());
+        return people.searchStudents(fid(facultyId), q, status, courseId, page, size, CurrentUser.get());
     }
 
     @GetMapping("/students/{id}")

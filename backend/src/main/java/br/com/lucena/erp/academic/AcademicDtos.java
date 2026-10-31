@@ -36,18 +36,27 @@ public final class AcademicDtos {
     }
 
     // ---------------- Disciplinas ----------------
+    /**
+     * Na criação a disciplina nasce dentro de um curso: courseId e semester são obrigatórios e geram o item da matriz
+     * curricular. Na edição esses campos são ignorados (o vínculo com outros cursos é feito pela matriz).
+     */
     public record SubjectRequest(@NotBlank @Pattern(regexp = CODE, message = CODE_MSG) String code,
                                  @NotBlank @Size(max = 200) String name,
                                  @Min(1) @Max(2000) int workloadHours,
                                  @Min(0) @Max(100) int credits,
                                  @Size(max = 10000) String syllabus,
-                                 boolean active) {
+                                 boolean active,
+                                 UUID courseId,
+                                 @Min(1) @Max(20) Integer semester,
+                                 Boolean mandatory,
+                                 UUID prerequisiteSubjectId) {
     }
 
-    public record SubjectView(UUID id, String code, String name, int workloadHours, int credits, String syllabus, boolean active) {
-        static SubjectView of(Subject s) {
-            return new SubjectView(s.getId(), s.getCode(), s.getName(), s.getWorkloadHours(), s.getCredits(), s.getSyllabus(), s.isActive());
-        }
+    public record CourseRef(UUID id, String code, String name, int semester) {
+    }
+
+    public record SubjectView(UUID id, String code, String name, int workloadHours, int credits, String syllabus, boolean active,
+                              List<CourseRef> courses) {
     }
 
     // ---------------- Matriz curricular ----------------
@@ -105,6 +114,10 @@ public final class AcademicDtos {
 
     // ---------------- Pessoas ----------------
     public record StudentRequest(@Pattern(regexp = "^[A-Za-z0-9._-]{3,30}$", message = "matrícula com 3 a 30 letras/números") String registration,
+                                 /** Curso do aluno (obrigatório). */
+                                 @NotNull UUID courseId,
+                                 /** Turma do mesmo curso para incluir o aluno já no cadastro (opcional). */
+                                 UUID classId,
                                  @NotBlank @Size(max = 200) String fullName,
                                  @Size(max = 200) String socialName,
                                  @NotBlank String cpf,
@@ -125,7 +138,7 @@ public final class AcademicDtos {
     public record StudentStatusRequest(@NotNull Student.Status status, @NotBlank @Size(min = 3, max = 300) String reason) {
     }
 
-    public record StudentView(UUID id, String registration, String fullName, String socialName, String cpfMasked, String cpf,
+    public record StudentView(UUID id, String registration, UUID courseId, String courseName, String fullName, String socialName, String cpfMasked, String cpf,
                               String rg, LocalDate birthDate, String email, String phone, String addressStreet, String addressNumber,
                               String addressDistrict, String addressCity, String addressState, String addressZip,
                               Student.Status status, boolean hasAccess, String currentClass, Instant createdAt) {

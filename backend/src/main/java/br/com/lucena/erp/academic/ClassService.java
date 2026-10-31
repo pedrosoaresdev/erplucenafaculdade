@@ -246,6 +246,11 @@ public class ClassService {
         if (!c.isActive()) throw ApiException.badRequest("CLASS_INACTIVE", "A turma está inativa");
         Student s = students.findByIdAndFacultyId(studentId, fid).orElseThrow(() -> ApiException.notFound("Aluno"));
         if (s.getStatus() != Student.Status.ACTIVE) throw ApiException.badRequest("STUDENT_NOT_ACTIVE", "Somente alunos com situação ativa podem ser incluídos");
+        if (s.getCourseId() == null) {
+            s.setCourseId(c.getCourseId()); // cadastro anterior ao vínculo obrigatório: assume o curso da turma
+        } else if (!s.getCourseId().equals(c.getCourseId())) {
+            throw ApiException.badRequest("STUDENT_COURSE_MISMATCH", "O aluno é de outro curso. Só é possível incluí-lo em turmas do curso dele");
+        }
         long enrolled = studentCount(classId);
         if (enrolled >= c.getCapacity()) throw ApiException.conflict("CLASS_FULL", "A turma atingiu a capacidade de " + c.getCapacity() + " alunos");
         String other = jdbc.query("""

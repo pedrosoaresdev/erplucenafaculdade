@@ -30,6 +30,8 @@ import java.util.*;
 @RequiredArgsConstructor
 public class PeopleService {
     private final StudentRepository students;
+    private final CourseRepository courses;
+    private final ClassService classService;
     private final TeacherRepository teachers;
     private final EmployeeRepository employees;
     private final UserRepository users;
@@ -44,11 +46,12 @@ public class PeopleService {
     // ======================= Alunos =======================
 
     @Transactional(readOnly = true)
-    public PageResponse<StudentView> searchStudents(UUID fid, String q, Student.Status status, int page, int size, AuthPrincipal actor) {
+    public PageResponse<StudentView> searchStudents(UUID fid, String q, Student.Status status, UUID courseId, int page, int size,
+                                                    AuthPrincipal actor) {
         String query = CatalogService.blank(q);
         if (query != null && query.replaceAll("[.\\-]", "").matches("\\d{11}")) query = query.replaceAll("\\D", "");
         boolean full = actor.has("STUDENT_MANAGE");
-        return PageResponse.of(students.search(fid, query, status, PageRequest.of(page, Math.min(size, 200), Sort.by("fullName"))),
+        return PageResponse.of(students.search(fid, query, status, courseId, PageRequest.of(page, Math.min(size, 200), Sort.by("fullName"))),
                 s -> view(s, full));
     }
 
@@ -66,16 +69,20 @@ public class PeopleService {
         if (students.existsByFacultyIdAndRegistrationIgnoreCase(fid, registration)) {
             throw ApiException.conflict("REGISTRATION_IN_USE", "Matrícula já utilizada");
         }
+        Course course = studentCourse(fid, req.courseId());
         Student s = new Student();
         s.setFacultyId(fid);
         s.setRegistration(registration);
         s.setCpf(cpf);
+        s.setCourseId(course.getId());
         apply(s, req);
-        students.save(s);
+        students.saveAndFlush(s);
         String temp = null;
         if (req.createAccess()) temp = provisionStudent(fid, s);
+        // Cadastro encadeado: inclusão opcional já na turma (do mesmo curso)
+        if (req.classId() != null) classService.addStudent(fid, req.classId(), s.getId(), actor, client);
         audit.record(actor, fid, "STUDENT_CREATED", "STUDENT", s.getId(),
-                Map.of("registration", registration, "accessCreated", req.createAccess()), client);
+                Map.of("registration", registration, "course", course.getCode(), "accessCreated", req.createAccess()), client);
         return new Created<>(view(s, true), temp == null ? null : registration, temp);
     }
 
@@ -90,6 +97,19 @@ public class PeopleService {
             throw ApiException.badRequest("REGISTRATION_IMMUTABLE", "A matrícula não pode ser alterada (é o login do aluno)");
         }
         List<String> changed = new ArrayList<>();
+        if (!req.courseId().equals(s.getCourseId())) {
+            Course course = studentCourse(fid, req.courseId());
+            String otherClass = jdbc.query("""
+                    select c.code from class_students x join classes c on c.id = x.class_id join academic_terms t on t.id = c.term_id
+                    where x.student_id = ? and t.status <> 'CLOSED' and c.course_id <> ? limit 1""",
+                    rs -> rs.next() ? rs.getString(1) : null, id, course.getId());
+            if (otherClass != null) {
+                throw ApiException.conflict("STUDENT_IN_CLASS_OF_COURSE",
+                        "O aluno está na turma " + otherClass + " do curso atual. Remova-o da turma antes de trocar o curso");
+            }
+            s.setCourseId(course.getId());
+            changed.add("course");
+        }
         if (!s.getCpf().equals(cpf)) changed.add("cpf");
         if (!Objects.equals(s.getEmail(), req.email().trim().toLowerCase())) changed.add("email");
         if (!Objects.equals(s.getFullName(), req.fullName().trim())) changed.add("fullName");
@@ -168,11 +188,19 @@ public class PeopleService {
                 select c.code || ' (' || t.code || ')' from class_students cs join classes c on c.id = cs.class_id
                 join academic_terms t on t.id = c.term_id where cs.student_id = ? order by t.code desc limit 1""",
                 rs -> rs.next() ? rs.getString(1) : null, s.getId());
-        return new StudentView(s.getId(), s.getRegistration(), s.getFullName(), s.getSocialName(), Masking.cpf(s.getCpf()), full ? s.getCpf() : null,
+        String courseName = s.getCourseId() == null ? null : courses.findById(s.getCourseId()).map(Course::getName).orElse(null);
+        return new StudentView(s.getId(), s.getRegistration(), s.getCourseId(), courseName, s.getFullName(), s.getSocialName(), Masking.cpf(s.getCpf()), full ? s.getCpf() : null,
                 full ? s.getRg() : null, full ? s.getBirthDate() : null, s.getEmail(), s.getPhone(),
                 full ? s.getAddressStreet() : null, full ? s.getAddressNumber() : null, full ? s.getAddressDistrict() : null,
                 s.getAddressCity(), s.getAddressState(), full ? s.getAddressZip() : null,
                 s.getStatus(), s.getUserId() != null, currentClass, s.getCreatedAt());
+    }
+
+    private Course studentCourse(UUID fid, UUID courseId) {
+        Course c = courses.findByIdAndFacultyId(courseId, fid)
+                .orElseThrow(() -> ApiException.badRequest("INVALID_COURSE", "Curso inválido para esta instituição"));
+        if (!c.isActive()) throw ApiException.badRequest("COURSE_INACTIVE", "O curso está inativo");
+        return c;
     }
 
     private Student student(UUID fid, UUID id) {

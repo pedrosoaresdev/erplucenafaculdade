@@ -117,21 +117,44 @@ public class CatalogService {
     // ======================= Disciplinas =======================
 
     @Transactional(readOnly = true)
-    public PageResponse<SubjectView> searchSubjects(UUID fid, String q, Boolean active, int page, int size) {
-        return PageResponse.of(subjects.search(fid, blank(q), active, PageRequest.of(page, Math.min(size, 500), Sort.by("name"))), SubjectView::of);
+    public PageResponse<SubjectView> searchSubjects(UUID fid, String q, Boolean active, UUID courseId, int page, int size) {
+        return PageResponse.of(subjects.search(fid, blank(q), active, courseId, PageRequest.of(page, Math.min(size, 500), Sort.by("name"))), this::view);
+    }
+
+    SubjectView view(Subject s) {
+        List<CourseRef> refs = jdbc.query("""
+                select c.id, c.code, c.name, cu.semester from curriculum cu join courses c on c.id = cu.course_id
+                where cu.subject_id = ? order by c.name""",
+                (rs, i) -> new CourseRef(rs.getObject(1, UUID.class), rs.getString(2), rs.getString(3), rs.getInt(4)), s.getId());
+        return new SubjectView(s.getId(), s.getCode(), s.getName(), s.getWorkloadHours(), s.getCredits(), s.getSyllabus(), s.isActive(), refs);
     }
 
     @Transactional
     public SubjectView createSubject(UUID fid, SubjectRequest req, AuthPrincipal actor, ClientInfo client) {
+        // Cadastro encadeado: toda disciplina nasce dentro de um curso (item da matriz curricular)
+        if (req.courseId() == null || req.semester() == null) {
+            throw ApiException.badRequest("COURSE_REQUIRED", "Selecione o curso e o semestre da disciplina");
+        }
+        Course course = course(fid, req.courseId());
+        if (!course.isActive()) throw ApiException.badRequest("COURSE_INACTIVE", "O curso está inativo");
         if (subjects.existsByFacultyIdAndCodeIgnoreCase(fid, req.code().trim())) {
-            throw ApiException.conflict("SUBJECT_CODE_IN_USE", "Já existe uma disciplina com este código");
+            throw ApiException.conflict("SUBJECT_CODE_IN_USE",
+                    "Já existe uma disciplina com este código. Para usá-la neste curso, adicione-a pela matriz curricular");
         }
         Subject s = new Subject();
         s.setFacultyId(fid);
         apply(s, req);
-        subjects.save(s);
-        audit.record(actor, fid, "SUBJECT_CREATED", "SUBJECT", s.getId(), Map.of("code", s.getCode()), client);
-        return SubjectView.of(s);
+        subjects.saveAndFlush(s);
+        CurriculumItem item = new CurriculumItem();
+        item.setFacultyId(fid);
+        item.setCourseId(course.getId());
+        item.setSubjectId(s.getId());
+        applyCurriculum(course, item, new CurriculumRequest(s.getId(), req.semester(), req.mandatory() == null || req.mandatory(),
+                req.prerequisiteSubjectId()));
+        curriculum.save(item);
+        audit.record(actor, fid, "SUBJECT_CREATED", "SUBJECT", s.getId(),
+                Map.of("code", s.getCode(), "course", course.getCode(), "semester", req.semester()), client);
+        return view(s);
     }
 
     @Transactional
@@ -142,7 +165,7 @@ public class CatalogService {
         }
         apply(s, req);
         audit.record(actor, fid, "SUBJECT_UPDATED", "SUBJECT", id, Map.of("code", s.getCode()), client);
-        return SubjectView.of(s);
+        return view(s);
     }
 
     @Transactional

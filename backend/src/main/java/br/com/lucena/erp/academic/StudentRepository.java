@@ -21,10 +21,12 @@ public interface StudentRepository extends JpaRepository<Student, UUID> {
     @Query("""
             select s from Student s where s.facultyId = :facultyId
               and (:status is null or s.status = :status)
+              and (:courseId is null or s.courseId = :courseId)
               and (:q is null or lower(s.fullName) like lower(concat('%', cast(:q as string), '%'))
                    or lower(coalesce(s.socialName, '')) like lower(concat('%', cast(:q as string), '%'))
                    or lower(s.registration) like lower(concat('%', cast(:q as string), '%'))
                    or s.cpf = :q)
             """)
-    Page<Student> search(@Param("facultyId") UUID facultyId, @Param("q") String q, @Param("status") Student.Status status, Pageable pageable);
+    Page<Student> search(@Param("facultyId") UUID facultyId, @Param("q") String q, @Param("status") Student.Status status,
+                         @Param("courseId") UUID courseId, Pageable pageable);
 }

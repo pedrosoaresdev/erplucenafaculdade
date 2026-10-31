@@ -27,11 +27,19 @@ public class AcademicController {
     private static final String MANAGE = "hasAnyAuthority('COURSE_MANAGE','PLATFORM_ADMIN')";
 
     private final CatalogService catalog;
+    private final PendingService pending;
     private final ClassService classes;
     private final TenantResolver tenant;
 
     private UUID fid(UUID requested) {
         return tenant.resolve(CurrentUser.get(), requested);
+    }
+
+    // ---------------- Pendências do cadastro ----------------
+    @GetMapping("/pending")
+    @PreAuthorize("hasAnyAuthority('COURSE_VIEW','COURSE_MANAGE','ENROLLMENT_MANAGE','STUDENT_MANAGE','TEACHER_MANAGE','PLATFORM_ADMIN')")
+    public List<PendingService.Pending> pending(@RequestParam(required = false) UUID facultyId) {
+        return pending.list(fid(facultyId));
     }
 
     // ---------------- Cursos ----------------
@@ -102,9 +110,9 @@ public class AcademicController {
     @GetMapping("/subjects")
     @PreAuthorize(VIEW)
     public PageResponse<SubjectView> subjects(@RequestParam(required = false) UUID facultyId, @RequestParam(required = false) String q,
-                                              @RequestParam(required = false) Boolean active,
+                                              @RequestParam(required = false) Boolean active, @RequestParam(required = false) UUID courseId,
                                               @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "50") int size) {
-        return catalog.searchSubjects(fid(facultyId), q, active, page, size);
+        return catalog.searchSubjects(fid(facultyId), q, active, courseId, page, size);
     }
 
     @PostMapping("/subjects")

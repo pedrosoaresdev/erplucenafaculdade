@@ -21,8 +21,10 @@ public interface SubjectRepository extends JpaRepository<Subject, UUID> {
     @Query("""
             select s from Subject s where s.facultyId = :facultyId
               and (:active is null or s.active = :active)
+              and (:courseId is null or exists (select 1 from CurriculumItem c where c.subjectId = s.id and c.courseId = :courseId))
               and (:q is null or lower(s.name) like lower(concat('%', cast(:q as string), '%'))
                    or lower(s.code) like lower(concat('%', cast(:q as string), '%')))
             """)
-    Page<Subject> search(@Param("facultyId") UUID facultyId, @Param("q") String q, @Param("active") Boolean active, Pageable pageable);
+    Page<Subject> search(@Param("facultyId") UUID facultyId, @Param("q") String q, @Param("active") Boolean active,
+                         @Param("courseId") UUID courseId, Pageable pageable);
 }

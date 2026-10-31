@@ -48,10 +48,10 @@ class PortalIT extends IntegrationTestBase {
 
         String course = ok(a, post("/api/academic/courses"), Map.of("code", "ENG", "name", "Engenharia", "degree", "BACHARELADO",
                 "modality", "PRESENCIAL", "durationSemesters", 10, "monthlyFee", 1500, "active", true)).get("id").asText();
-        String calc = ok(a, post("/api/academic/subjects"), Map.of("code", "CALC1", "name", "Cálculo I", "workloadHours", 80, "credits", 4, "active", true)).get("id").asText();
-        String fis = ok(a, post("/api/academic/subjects"), Map.of("code", "FIS1", "name", "Física I", "workloadHours", 60, "credits", 4, "active", true)).get("id").asText();
-        ok(a, post("/api/academic/courses/" + course + "/curriculum"), Map.of("subjectId", calc, "semester", 1, "mandatory", true));
-        ok(a, post("/api/academic/courses/" + course + "/curriculum"), Map.of("subjectId", fis, "semester", 1, "mandatory", true));
+        String calc = ok(a, post("/api/academic/subjects"), Map.of("code", "CALC1", "name", "Cálculo I", "workloadHours", 80, "credits", 4,
+                "active", true, "courseId", course, "semester", 1)).get("id").asText();
+        String fis = ok(a, post("/api/academic/subjects"), Map.of("code", "FIS1", "name", "Física I", "workloadHours", 60, "credits", 4,
+                "active", true, "courseId", course, "semester", 1)).get("id").asText();
         LocalDate today = LocalDate.now(ZoneId.of("America/Sao_Paulo"));
         String termId = ok(a, post("/api/academic/terms"), Map.of("code", today.getYear() + ".1", "startDate", today.minusDays(30).toString(),
                 "endDate", today.plusDays(60).toString())).get("id").asText();
@@ -69,8 +69,8 @@ class PortalIT extends IntegrationTestBase {
         for (JsonNode s : d.get("subjects")) {
             if (s.get("subjectCode").asText().equals("CALC1")) csId = s.get("id").asText(); else otherCs = s.get("id").asText();
         }
-        JsonNode st1 = ok(a, post("/api/academic/students"), Map.of("fullName", "Aluno Um", "cpf", nextCpf(), "email", "um@a.br", "createAccess", true));
-        JsonNode st2 = ok(a, post("/api/academic/students"), Map.of("fullName", "Aluno Dois", "cpf", nextCpf(), "email", "dois@a.br", "createAccess", true));
+        JsonNode st1 = ok(a, post("/api/academic/students"), Map.of("fullName", "Aluno Um", "cpf", nextCpf(), "email", "um@a.br", "createAccess", true, "courseId", course));
+        JsonNode st2 = ok(a, post("/api/academic/students"), Map.of("fullName", "Aluno Dois", "cpf", nextCpf(), "email", "dois@a.br", "createAccess", true, "courseId", course));
         String s1Id = st1.get("record").get("id").asText(), s2Id = st2.get("record").get("id").asText();
         ok(a, post("/api/academic/classes/" + classId + "/students"), Map.of("studentId", s1Id));
         ok(a, post("/api/academic/classes/" + classId + "/students"), Map.of("studentId", s2Id));
