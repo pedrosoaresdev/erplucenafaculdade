@@ -17,6 +17,13 @@ const browser = await chromium.launch();
 const errors = [];
 const step = (m) => console.log('✔', m);
 
+/** Diálogo aberto e com a animação concluída (o foco inicial já foi aplicado). */
+async function openedDialog(page) {
+  await page.locator('mat-dialog-container.mdc-dialog--open').last().waitFor();
+  await page.waitForTimeout(400);
+  return page.getByRole('dialog').last();
+}
+
 async function shot(page, name) { await page.screenshot({ path: `${OUT}/${name}.png`, fullPage: true }); }
 
 async function setupAuthenticator(page, name) {
@@ -60,7 +67,7 @@ try {
   await shot(page, '03-dashboard-plataforma');
   await page.goto(`${BASE}/plataforma/faculdades`);
   await page.getByRole('button', { name: 'Nova faculdade' }).click();
-  const dlg = page.getByRole('dialog');
+  const dlg = await openedDialog(page);
   await dlg.getByLabel('Nome da faculdade').fill('Faculdade Lucena Centro');
   await dlg.getByLabel('Identificador (endereço de login)').fill('lucena-centro');
   await dlg.getByLabel('Razão social').fill('Lucena Educação Superior LTDA');
@@ -69,6 +76,7 @@ try {
   await dlg.getByLabel('Usuário', { exact: true }).fill('diretor');
   await dlg.getByLabel('Nome completo').fill('Ana Diretora');
   await dlg.locator('fieldset').getByLabel('E-mail').fill('ana@lucena.edu.br');
+  if ((await dlg.getByLabel('Nome da faculdade').inputValue()) !== 'Faculdade Lucena Centro') throw new Error('campo nome alterado indevidamente');
   await shot(page, '04-nova-faculdade');
   await page.getByRole('button', { name: 'Salvar' }).click();
   await page.getByText('Acesso gerado').waitFor();
@@ -161,7 +169,7 @@ try {
   }
   await page.goto(`${BASE}/academico/cursos`);
   await page.getByRole('button', { name: 'Novo curso' }).click();
-  let form = page.getByRole('dialog');
+  let form = await openedDialog(page);
   await form.getByLabel('Código').fill('ADS');
   await form.getByLabel('Nome do curso').fill('Análise e Desenvolvimento de Sistemas');
   await form.getByLabel('Duração (semestres)').fill('5');
@@ -190,7 +198,7 @@ try {
 
   await page.goto(`${BASE}/academico/professores`);
   await page.getByRole('button', { name: 'Novo professor' }).click();
-  form = page.getByRole('dialog');
+  form = await openedDialog(page);
   await form.getByLabel('Nome completo').fill('Carlos Mendes');
   await form.getByLabel('CPF').fill(cpf(1));
   await form.getByLabel('E-mail').fill('carlos@lucena.edu.br');
@@ -203,7 +211,7 @@ try {
 
   await page.goto(`${BASE}/academico/turmas`);
   await page.getByRole('button', { name: 'Nova turma' }).click();
-  form = page.getByRole('dialog');
+  form = await openedDialog(page);
   await select(form, 'Curso', 'Análise e Desenvolvimento de Sistemas');
   await select(form, 'Período letivo', '2026.2');
   await form.getByLabel('Código da turma').fill('ADS1N');
@@ -214,7 +222,7 @@ try {
   await page.waitForURL(/\/academico\/turmas\/[0-9a-f-]{36}$/);
   await page.getByRole('heading', { name: 'Turma ADS1N' }).waitFor();
   await page.getByRole('button', { name: 'Ofertar disciplina' }).click();
-  form = page.getByRole('dialog');
+  form = await openedDialog(page);
   await select(form, 'Disciplina (da matriz do curso)', 'Lógica de Programação');
   await select(form, 'Professor', 'Carlos Mendes');
   await select(form, 'Dia da semana', 'Segunda');
@@ -224,7 +232,7 @@ try {
   await page.getByRole('cell', { name: '19:00 – 20:40', exact: true }).waitFor();
   // Choque de horário dentro da própria turma é recusado pelo servidor
   await page.getByRole('button', { name: 'Ofertar disciplina' }).click();
-  form = page.getByRole('dialog');
+  form = await openedDialog(page);
   await select(form, 'Disciplina (da matriz do curso)', 'Banco de Dados');
   await select(form, 'Dia da semana', 'Segunda');
   await form.getByLabel('Início').fill('20:00');
@@ -239,7 +247,7 @@ try {
 
   await page.goto(`${BASE}/academico/alunos`);
   await page.getByRole('button', { name: 'Novo aluno' }).click();
-  form = page.getByRole('dialog');
+  form = await openedDialog(page);
   await form.getByLabel('Nome completo').fill('Beatriz Souza');
   await form.getByLabel('CPF').fill('123.456.789-00');
   await form.getByLabel('E-mail').fill('beatriz@aluno.lucena.edu.br');
