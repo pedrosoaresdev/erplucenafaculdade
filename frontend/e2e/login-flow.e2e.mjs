@@ -37,7 +37,8 @@ async function setupAuthenticator(page, name) {
 try {
   const ctx = await browser.newContext({ viewport: { width: 1366, height: 860 } });
   const page = await ctx.newPage();
-  page.on('pageerror', e => errors.push(e.message));
+  page.on('pageerror', e => { errors.push(e.message); console.error('PAGEERROR:', e.message); });
+  page.on('console', m => { if (m.type() === 'error') console.error('CONSOLE:', m.text()); });
 
   // 1) Login Master — primeiro acesso exige autenticador
   await page.goto(`${BASE}/login`);
@@ -207,7 +208,9 @@ try {
   await form.getByLabel('Código da turma').fill('ADS1N');
   await form.getByLabel('Sala').fill('201');
   await form.getByRole('button', { name: 'Salvar' }).click();
+  await form.waitFor({ state: 'detached' });
   await page.getByRole('link', { name: 'ADS1N' }).click();
+  await page.waitForURL(/\/academico\/turmas\/[0-9a-f-]{36}$/);
   await page.getByRole('heading', { name: 'Turma ADS1N' }).waitFor();
   await page.getByRole('button', { name: 'Ofertar disciplina' }).click();
   form = page.getByRole('dialog');
