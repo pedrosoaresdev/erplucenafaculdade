@@ -59,6 +59,12 @@ export class LoginComponent implements OnInit, OnDestroy {
     const msg = this.route.snapshot.queryParamMap.get('msg');
     if (msg) this.info.set(msg);
     const slug = this.slug();
+    if (!slug) {
+      // Sem nenhum administrador Master ainda: direciona para a instalação inicial
+      this.http.get<{ setupRequired: boolean }>('/api/setup/status').subscribe({
+        next: s => { if (s.setupRequired) this.router.navigate(['/instalacao']); }, error: () => {},
+      });
+    }
     if (slug) {
       this.http.get<PublicFaculty>(`/api/public/faculties/${encodeURIComponent(slug)}`).subscribe({
         next: f => this.faculty.set(f),

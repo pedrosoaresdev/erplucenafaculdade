@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard, ownPermissionGuard, permissionGuard } from './core/guards';
 
 export const routes: Routes = [
+  { path: 'instalacao', loadComponent: () => import('./features/setup/setup.component').then(m => m.SetupComponent), title: 'Instalação inicial' },
   { path: 'login', loadComponent: () => import('./features/auth/login.component').then(m => m.LoginComponent), title: 'Entrar — Plataforma' },
   { path: 'f/:slug/login', loadComponent: () => import('./features/auth/login.component').then(m => m.LoginComponent), title: 'Entrar' },
   {

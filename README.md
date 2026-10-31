@@ -37,16 +37,24 @@ git clone https://github.com/pedrosoaresdev/erplucenafaculdade.git
 cd erplucenafaculdade
 ```
 
-1. Copie `.env.example` para `.env` e preencha as chaves e a senha do Master (instruções dentro do arquivo).
+1. Copie `.env.example` para `.env` e preencha as duas chaves (instruções dentro do arquivo). O e-mail do dono
+   (`ERP_OWNER_EMAIL`) já vem preenchido.
 2. Suba tudo (banco, backend e frontend):
 
 ```bash
 docker compose up --build
 ```
 
-3. Abra **http://localhost:8081/login**, entre com `master` e a senha definida no `.env`, e configure o
-   Google Authenticator lendo o QR Code.
-4. Em **Faculdades › Nova faculdade**, crie a instituição com o Diretor Geral inicial. O endereço de login
+3. No console aparece um quadro **INSTALAÇÃO INICIAL** com o **código de instalação** (ex.: `K7QM-2XPA-9DTR`).
+4. Abra **http://localhost:8081** — o sistema abre a tela de **Instalação inicial**:
+   1. informe o seu e-mail (`ERP_OWNER_EMAIL`) e o código do console;
+   2. configure o **Google Authenticator** (QR Code ou chave) e digite o código de 6 dígitos;
+   3. crie o seu **nome de usuário e senha**;
+   4. guarde os códigos de recuperação. Pronto: você é o administrador Master.
+5. Daí em diante, o acesso é em http://localhost:8081/login com usuário + senha + código do Google Authenticator.
+   A instalação não pode ser repetida. Os demais usuários são criados por você (ou pela gestão de cada faculdade)
+   e recebem senha temporária.
+6. Em **Faculdades › Nova faculdade**, crie a instituição com o Diretor Geral inicial. O endereço de login
    dela será `http://localhost:8081/f/<identificador>/login`.
 
 Os dados ficam no volume `erp-db` (persistem entre reinicializações). Para publicar na internet, use HTTPS e

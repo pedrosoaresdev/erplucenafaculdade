@@ -1,7 +1,7 @@
 # Execução local completa: PostgreSQL + backend + frontend.
 #   1) copie .env.example para .env e gere as chaves (instruções no arquivo)
 #   2) docker compose up --build
-#   3) abra http://localhost:8081/login
+#   3) abra http://localhost:8081/login e conclua a instalação com o código exibido neste console
 services:
   postgres:
     image: postgres:16
@@ -31,9 +31,8 @@ services:
       ERP_COOKIE_SECURE: ${ERP_COOKIE_SECURE:-false}
       ERP_CORS_ORIGINS: http://localhost:8081
       ERP_TOTP_ISSUER: ${ERP_TOTP_ISSUER:-ERP Lucena}
-      ERP_BOOTSTRAP_MASTER_USERNAME: ${ERP_BOOTSTRAP_MASTER_USERNAME:-master}
-      ERP_BOOTSTRAP_MASTER_PASSWORD: ${ERP_BOOTSTRAP_MASTER_PASSWORD:?defina ERP_BOOTSTRAP_MASTER_PASSWORD no .env}
-      ERP_BOOTSTRAP_MASTER_EMAIL: ${ERP_BOOTSTRAP_MASTER_EMAIL:-master@localhost}
+      # Dono da plataforma: único e-mail que pode fazer a instalação inicial (primeiro Master)
+      ERP_OWNER_EMAIL: ${ERP_OWNER_EMAIL:?defina ERP_OWNER_EMAIL no .env}
     restart: unless-stopped
 
   frontend:
