@@ -61,5 +61,7 @@ erp:
     master-password: ${ERP_BOOTSTRAP_MASTER_PASSWORD:}
     master-email: ${ERP_BOOTSTRAP_MASTER_EMAIL:}
     master-name: ${ERP_BOOTSTRAP_MASTER_NAME:Administrador Master}
+  setup:
+    owner-email: ${ERP_OWNER_EMAIL:}
   cors:
     allowed-origins: ${ERP_CORS_ORIGINS:http://localhost:4200}

@@ -28,6 +28,8 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: maven
+      - name: Banco extra para o teste de instalação inicial
+        run: PGPASSWORD=erp psql -h localhost -U erp -d erp_test -c "create database erp_setup_test"
       - run: mvn -B verify
 
   frontend:

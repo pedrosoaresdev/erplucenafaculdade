@@ -12,7 +12,7 @@ class SecretCipherTest {
     static SecretCipher cipher(String key32) {
         String b64 = Base64.getEncoder().encodeToString(key32.getBytes());
         return new SecretCipher(new ErpProperties(new ErpProperties.Security("x", b64, null, null, null, null, "i",
-                false, 5, null, 5, 30, 10, false), null, null));
+                false, 5, null, 5, 30, 10, false), null, null, null));
     }
 
     @Test

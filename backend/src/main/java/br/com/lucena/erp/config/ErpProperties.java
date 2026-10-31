@@ -11,7 +11,7 @@ import java.util.List;
 
 @Validated
 @ConfigurationProperties(prefix = "erp")
-public record ErpProperties(Security security, Bootstrap bootstrap, Cors cors) {
+public record ErpProperties(Security security, Bootstrap bootstrap, Cors cors, Setup setup) {
 
     public record Security(
             /** Chave HMAC (Base64, >= 32 bytes) para assinar access tokens JWT. */
@@ -37,5 +37,9 @@ public record ErpProperties(Security security, Bootstrap bootstrap, Cors cors) {
     }
 
     public record Cors(List<String> allowedOrigins) {
+    }
+
+    /** Instalação inicial: e-mail do dono da plataforma (único que pode criar o primeiro Master). */
+    public record Setup(String ownerEmail) {
     }
 }

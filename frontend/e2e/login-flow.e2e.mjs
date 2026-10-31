@@ -322,7 +322,7 @@ try {
   await page.getByLabel('Código do autenticador').fill(await freshCode(teacherSecret));
   await page.getByRole('button', { name: 'Verificar e entrar' }).click();
   await page.getByRole('heading', { name: /Olá, Carlos/ }).waitFor();
-  await page.getByRole('link', { name: 'Minhas turmas' }).click();
+  await page.getByRole('navigation', { name: 'Menu principal' }).getByRole('link', { name: 'Minhas turmas' }).click();
   await page.getByText('Lógica de Programação').first().waitFor();
   if (await page.getByText('Banco de Dados').count()) throw new Error('professor viu disciplina de outro professor');
   await shot(page, '21-professor-turmas');
@@ -364,7 +364,7 @@ try {
   await page.getByLabel('Código do autenticador').fill(await freshCode(studentSecret));
   await page.getByRole('button', { name: 'Verificar e entrar' }).click();
   await page.getByRole('heading', { name: /Olá, Beatriz/ }).waitFor();
-  await page.getByRole('link', { name: 'Meu painel' }).click();
+  await page.getByRole('navigation', { name: 'Menu principal' }).getByRole('link', { name: 'Meu painel' }).click();
   await page.getByRole('heading', { name: 'Olá, Beatriz!' }).waitFor();
   await page.getByRole('cell', { name: '8,50', exact: true }).waitFor();
   await page.getByText('2 de 2').waitFor();

@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Slf4j
 @Component
+@org.springframework.core.annotation.Order(10)
 @RequiredArgsConstructor
 public class MasterBootstrap implements ApplicationRunner {
     private final UserRepository users;

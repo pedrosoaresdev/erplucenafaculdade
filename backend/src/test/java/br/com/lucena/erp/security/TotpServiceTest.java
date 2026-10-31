@@ -17,7 +17,7 @@ class TotpServiceTest {
 
     static ErpProperties props() {
         return new ErpProperties(new ErpProperties.Security("x", "x", null, null, null, null, "ERP Teste",
-                false, 5, null, 5, 30, 10, false), null, null);
+                false, 5, null, 5, 30, 10, false), null, null, null);
     }
 
     static TotpService at(long epochSeconds) {

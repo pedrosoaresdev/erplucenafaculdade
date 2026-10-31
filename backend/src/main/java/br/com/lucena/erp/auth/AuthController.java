@@ -86,9 +86,14 @@ public class AuthController {
     }
 
     private void setCookie(HttpServletResponse res, String value, Duration maxAge) {
+        writeRefreshCookie(res, value, maxAge, props.security().cookieSecure());
+    }
+
+    /** Cookie de sessão (refresh): HttpOnly, SameSite=Strict, restrito a /api/auth. */
+    public static void writeRefreshCookie(HttpServletResponse res, String value, Duration maxAge, boolean secure) {
         ResponseCookie cookie = ResponseCookie.from(REFRESH_COOKIE, value)
                 .httpOnly(true)
-                .secure(props.security().cookieSecure())
+                .secure(secure)
                 .sameSite("Strict")
                 .path("/api/auth")
                 .maxAge(maxAge)
