@@ -1,5 +1,7 @@
-# Gera o arquivo .env com chaves aleatórias seguras (Windows PowerShell 5+ ou PowerShell 7).
-# Uso, na pasta do projeto:  powershell -ExecutionPolicy Bypass -File .\gerar-env.ps1
+﻿# Gera o arquivo .env com chaves aleatórias seguras (Windows PowerShell 5+ ou PowerShell 7).
+# Uso, no PowerShell, dentro da pasta do projeto:
+#   Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+#   .\gerar-env.ps1
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 if (Test-Path '.env') { Write-Host 'O arquivo .env já existe. Nada foi alterado (apague-o para gerar de novo).'; exit 0 }

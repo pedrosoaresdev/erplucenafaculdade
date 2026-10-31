@@ -38,7 +38,8 @@ cd erplucenafaculdade
 ```
 
 1. Gere o arquivo de configuração `.env` (cria as chaves secretas automaticamente; o e-mail do dono já vem preenchido):
-   - **Windows** (PowerShell, na pasta do projeto): `powershell -ExecutionPolicy Bypass -File .\gerar-env.ps1`
+   - **Windows** (no PowerShell, dentro da pasta do projeto), dois comandos:
+     `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` e depois `.\gerar-env.ps1`
    - **macOS/Linux**: `./gerar-env.sh`
 
    Guarde uma cópia do `.env` em local seguro: sem a `ERP_ENCRYPTION_KEY`, os autenticadores precisam ser reconfigurados.
