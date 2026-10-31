@@ -22,6 +22,7 @@
 | `me` | Perfil do próprio usuário: dados, step-up, troca de senha, gerenciamento do autenticador, sessões, histórico, notificações |
 | `platform` | Painel Master: faculdades (tenants), planos, configurações, dashboard; endpoint público de branding |
 | `iam` | Usuários, cargos (RBAC), permissões, proteção contra escalonamento de privilégio, bootstrap do Master |
+| `academic` | Fase 4: cursos, disciplinas, matriz curricular, períodos letivos, turmas, professores, alunos e funcionários |
 | `audit` | Auditoria (append-only) e logs de acesso |
 | `security` | JWT, conversor de sessão, TOTP, política de senha, resolução de tenant, rate limit |
 | `crypto` | AES-256-GCM, tokens aleatórios, hash, Argon2id |
@@ -54,6 +55,9 @@
   `accounts_payable`, `financial_simulations`.
 - **V4 serviços**: `request_types`, `requests`, `request_history`, `documents`, `signatures`, `conversations`,
   `conversation_participants`, `messages`, `books`, `loans`, `reservations`, `book_favorites`, `annotations`.
+- **V6 regras acadêmicas**: `registration_counters` (matrícula sequencial atômica por faculdade/ano), `term_id` em
+  `class_students` com índice único (um aluno por turma no período), `CHECK` de horário (término > início) e de
+  pré-requisito.
 - **V5 seed**: catálogo de permissões, planos e os 10 cargos-modelo (Diretor Geral, Diretor Acadêmico,
   Coordenador, Gerente, Financeiro, Secretária, Professor, Suporte/TI, Bibliotecário, Aluno), copiados para cada
   nova faculdade.
@@ -93,3 +97,20 @@ Documentação completa e interativa em `/swagger-ui.html`.
 | * | `/api/platform/**` | Painel Master (somente `PLATFORM_ADMIN`) |
 | * | `/api/admin/users/**`, `/roles/**`, `/permissions`, `/faculty/settings`, `/audit`, `/access-logs` | Administração da instituição (RBAC) |
 | GET | `/api/public/faculties/{slug}` | Nome/logo para a tela de login |
+
+### Acadêmico (Fase 4)
+
+| Método | Rota | Permissão | Regras principais |
+|---|---|---|---|
+| GET/POST/PUT/DELETE | `/api/academic/courses[/{id}]` | ver: `COURSE_VIEW`; alterar: `COURSE_MANAGE` | Código único por faculdade; duração ≥ maior semestre usado; exclusão só sem turmas/matrículas |
+| GET/POST/PUT/DELETE | `/api/academic/courses/{id}/curriculum[/{itemId}]` | idem | Semestre ≤ duração; pré-requisito na mesma matriz e em semestre anterior; não remove pré-requisito em uso nem disciplina ofertada |
+| GET/POST/PUT/DELETE | `/api/academic/subjects[/{id}]` | idem | Código único; exclusão só se não usada |
+| GET/POST/PUT/DELETE | `/api/academic/terms[/{id}]`, `POST /terms/{id}/status` | idem | `AAAA.S`; término > início (≤ 1 ano); PLANEJADO→ABERTO→ENCERRADO (reabertura auditada); encerrado bloqueia turmas |
+| GET/POST/PUT/DELETE | `/api/academic/classes[/{id}]` | idem | Código único no período; semestre ≤ duração; curso/período imutáveis; capacidade ≥ alunos |
+| POST/PUT/DELETE | `/api/academic/classes/{id}/subjects[/{csId}]` | `COURSE_MANAGE` | Só disciplinas da matriz; horário completo; **sem choque** de professor, sala ou da própria turma |
+| POST/DELETE | `/api/academic/classes/{id}/students[/{studentId}]` | `COURSE_MANAGE` ou `ENROLLMENT_MANAGE` | Aluno ativo; capacidade (lock da turma); uma turma por período |
+| GET/POST/PUT | `/api/academic/students[/{id}]`, `/status`, `/access` | ver: `STUDENT_VIEW`; alterar: `STUDENT_MANAGE` | CPF válido e único na faculdade; matrícula `AAAA00001` gerada (imutável, é o login); limite de alunos do plano; CPF mascarado para quem só consulta |
+| GET/POST/PUT/DELETE | `/api/academic/teachers[/{id}]`, `/access` | `TEACHER_MANAGE` | Acesso opcional com cargo Professor; exclusão bloqueada se houver acesso, aulas ou coordenação |
+| GET/POST/PUT/DELETE | `/api/academic/employees[/{id}]`, `/access` | `USER_MANAGE` | Acesso opcional com cargos escolhidos (anti-escalonamento) |
+
+Todas as operações de escrita são auditadas. O Master informa `?facultyId=`.

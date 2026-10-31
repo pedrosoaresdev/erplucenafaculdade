@@ -14,7 +14,7 @@ import { MatIconModule } from '@angular/material/icon';
         Entregue-a ao usuário por canal seguro. No primeiro acesso ele configurará o Google Authenticator e definirá uma nova senha.</p>
       <dl class="info-list">
         @if (data.login) { <dt>Endereço de acesso</dt><dd><code>{{ data.login }}</code></dd> }
-        <dt>Usuário</dt><dd><code>{{ data.username }}</code></dd>
+        <dt>Usuário</dt><dd><code class="credential-username">{{ data.username }}</code></dd>
         <dt>Senha temporária</dt><dd><code class="secret-value">{{ data.password }}</code></dd>
       </dl>
     </mat-dialog-content>

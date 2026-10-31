@@ -8,7 +8,6 @@ import { AuthService } from '../../core/auth.service';
 
 /** Roteiro de módulos (exibidos como "em implantação" até a respectiva fase ser entregue). */
 const ROADMAP = [
-  { icon: 'school', title: 'Acadêmico', desc: 'Cursos, disciplinas, turmas, alunos e professores', phase: 'Fase 4' },
   { icon: 'person', title: 'Portais do aluno e do professor', desc: 'Notas, faltas, diário de classe, materiais', phase: 'Fase 5' },
   { icon: 'description', title: 'Secretaria', desc: 'Matrículas, contratos, declarações e históricos', phase: 'Fase 6' },
   { icon: 'payments', title: 'Financeiro', desc: 'Cobranças, boletos/Pix, baixa automática, calculadoras', phase: 'Fase 7' },
@@ -51,6 +50,8 @@ const ROADMAP = [
       <a mat-stroked-button routerLink="/perfil" [queryParams]="{ aba: 'senha' }"><mat-icon>password</mat-icon> Alterar senha</a>
       <a mat-stroked-button routerLink="/perfil" [queryParams]="{ aba: 'sessoes' }"><mat-icon>devices</mat-icon> Sessões ativas</a>
       @if (auth.profile()?.platformAdmin) { <a mat-flat-button routerLink="/plataforma"><mat-icon>insights</mat-icon> Painel da plataforma</a> }
+      @if (auth.hasPermission('STUDENT_VIEW', 'STUDENT_MANAGE')) { <a mat-stroked-button routerLink="/academico/alunos"><mat-icon>badge</mat-icon> Alunos</a> }
+      @if (auth.hasPermission('COURSE_VIEW', 'COURSE_MANAGE')) { <a mat-stroked-button routerLink="/academico/turmas"><mat-icon>groups</mat-icon> Turmas</a> }
       @if (auth.hasPermission('USER_VIEW', 'USER_MANAGE')) { <a mat-stroked-button routerLink="/admin/usuarios"><mat-icon>group</mat-icon> Usuários</a> }
     </section>
 

@@ -19,7 +19,7 @@ administrativa e institucional, com isolamento entre faculdades e verificação 
 | 1 | Arquitetura, banco de dados (schema completo), multi-tenancy, autenticação | ✅ Entregue |
 | 2 | Google Authenticator, códigos de recuperação, troca de dispositivo, step-up, segurança | ✅ Entregue |
 | 3 | Painel Master, faculdades, planos, usuários, cargos e permissões, auditoria | ✅ Entregue |
-| 4 | Cursos, disciplinas, alunos, professores, turmas | ⏳ Schema pronto, APIs/telas pendentes |
+| 4 | Cursos, disciplinas, matriz curricular, períodos letivos, turmas (horários), professores, alunos (login por matrícula), funcionários | ✅ Entregue |
 | 5–12 | Portais, secretaria, financeiro, requerimentos, mensagens, dashboards, biblioteca, relatórios | ⏳ Schema pronto, APIs/telas pendentes |
 
 Módulos ainda não integrados aparecem na tela inicial como **"não integrado"** — não há botões decorativos.
@@ -75,8 +75,10 @@ cd frontend && ./e2e/reset-and-run.sh e2e-screens
 O E2E cobre: login com senha errada, primeiro acesso com configuração obrigatória do autenticador,
 códigos de recuperação, criação de faculdade, primeiro acesso do Diretor com troca obrigatória de senha
 (senha atual + código TOTP), recusa de senha que contém o usuário, segundo acesso pedindo só o código,
-bloqueio do painel Master para usuários da faculdade, layout em celular sem rolagem horizontal e
-painel de acessibilidade.
+bloqueio do painel Master para usuários da faculdade; cadastro de disciplinas, curso e matriz curricular,
+abertura de período letivo, professor com acesso, turma com oferta de disciplina/horário e bloqueio de choque
+de horário, aluno com matrícula gerada automaticamente e incluído na turma, primeiro acesso do aluno **pela
+matrícula** com Google Authenticator; layout em celular sem rolagem horizontal e painel de acessibilidade.
 
 ## Variáveis de ambiente (produção)
 

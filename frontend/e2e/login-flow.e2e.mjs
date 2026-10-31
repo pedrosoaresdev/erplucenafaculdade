@@ -6,7 +6,7 @@
  */
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
-import { freshCode, totp } from './totp.mjs';
+import { cpf, freshCode, totp } from './totp.mjs';
 
 const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:4200';
 const OUT = process.argv[2] ?? 'e2e-screens';
@@ -137,7 +137,151 @@ try {
   await page.getByText('Você não tem permissão').waitFor();
   step('rotas administrativas e bloqueio do painel Master verificados');
 
-  // 5) Responsividade (celular): menu vira gaveta, tabela vira cartões
+  // 5) Acadêmico (Fase 4): disciplinas, curso + matriz, período, professor, turma, horários e aluno
+  async function select(scope, label, option) {
+    await scope.getByRole('combobox', { name: label }).click();
+    await page.getByRole('option', { name: option }).click();
+  }
+  await page.goto(`${BASE}/academico/disciplinas`);
+  for (const [code, name] of [['LOG1', 'Lógica de Programação'], ['BD1', 'Banco de Dados']]) {
+    await page.getByLabel('Código', { exact: true }).fill(code);
+    await page.getByLabel('Nome', { exact: true }).fill(name);
+    await page.getByLabel('Carga horária (h)').fill('80');
+    await page.getByRole('button', { name: 'Salvar' }).click();
+    await page.getByRole('cell', { name: new RegExp(name) }).waitFor();
+  }
+  await page.goto(`${BASE}/academico/cursos`);
+  await page.getByRole('button', { name: 'Novo curso' }).click();
+  let form = page.getByRole('dialog');
+  await form.getByLabel('Código').fill('ADS');
+  await form.getByLabel('Nome do curso').fill('Análise e Desenvolvimento de Sistemas');
+  await form.getByLabel('Duração (semestres)').fill('5');
+  await form.getByLabel('Mensalidade (R$)').fill('899.90');
+  await form.getByRole('button', { name: 'Salvar' }).click();
+  await page.getByRole('link', { name: 'Análise e Desenvolvimento de Sistemas' }).click();
+  await page.getByRole('heading', { name: /Matriz curricular/ }).waitFor();
+  for (const name of ['LOG1 — Lógica de Programação', 'BD1 — Banco de Dados']) {
+    await select(page, 'Disciplina', name);
+    await page.getByRole('button', { name: 'Adicionar' }).click();
+    await page.getByText('Matriz atualizada').waitFor();
+    await page.getByText('Matriz atualizada').waitFor({ state: 'hidden' });
+  }
+  await page.getByText('2 disciplinas · 160 h').waitFor();
+  await shot(page, '17-matriz-curricular');
+  step('disciplinas, curso e matriz curricular cadastrados');
+
+  await page.goto(`${BASE}/academico/periodos`);
+  await page.getByLabel('Código (AAAA.S)').fill('2026.2');
+  await page.getByLabel('Início').fill('2026-08-03');
+  await page.getByLabel('Término').fill('2026-12-18');
+  await page.getByRole('button', { name: 'Salvar' }).click();
+  await page.getByRole('button', { name: 'Ações para 2026.2' }).click();
+  await page.getByRole('menuitem', { name: 'Abrir período' }).click();
+  await page.getByText('Aberto', { exact: true }).waitFor();
+
+  await page.goto(`${BASE}/academico/professores`);
+  await page.getByRole('button', { name: 'Novo professor' }).click();
+  form = page.getByRole('dialog');
+  await form.getByLabel('Nome completo').fill('Carlos Mendes');
+  await form.getByLabel('CPF').fill(cpf(1));
+  await form.getByLabel('E-mail').fill('carlos@lucena.edu.br');
+  await form.getByLabel('Nome de usuário').fill('prof.carlos');
+  await form.getByRole('button', { name: 'Salvar' }).click();
+  await page.getByText('Acesso gerado').waitFor();
+  await page.getByRole('button', { name: 'Concluir' }).click();
+  await page.getByText('prof.carlos').waitFor();
+  step('professor cadastrado com acesso (cargo Professor)');
+
+  await page.goto(`${BASE}/academico/turmas`);
+  await page.getByRole('button', { name: 'Nova turma' }).click();
+  form = page.getByRole('dialog');
+  await select(form, 'Curso', 'Análise e Desenvolvimento de Sistemas');
+  await select(form, 'Período letivo', '2026.2');
+  await form.getByLabel('Código da turma').fill('ADS1N');
+  await form.getByLabel('Sala').fill('201');
+  await form.getByRole('button', { name: 'Salvar' }).click();
+  await page.getByRole('link', { name: 'ADS1N' }).click();
+  await page.getByRole('heading', { name: 'Turma ADS1N' }).waitFor();
+  await page.getByRole('button', { name: 'Ofertar disciplina' }).click();
+  form = page.getByRole('dialog');
+  await select(form, 'Disciplina (da matriz do curso)', 'Lógica de Programação');
+  await select(form, 'Professor', 'Carlos Mendes');
+  await select(form, 'Dia da semana', 'Segunda');
+  await form.getByLabel('Início').fill('19:00');
+  await form.getByLabel('Término').fill('20:40');
+  await form.getByRole('button', { name: 'Salvar' }).click();
+  await page.getByRole('cell', { name: '19:00 – 20:40' }).waitFor();
+  // Choque de horário dentro da própria turma é recusado pelo servidor
+  await page.getByRole('button', { name: 'Ofertar disciplina' }).click();
+  form = page.getByRole('dialog');
+  await select(form, 'Disciplina (da matriz do curso)', 'Banco de Dados');
+  await select(form, 'Dia da semana', 'Segunda');
+  await form.getByLabel('Início').fill('20:00');
+  await form.getByLabel('Término').fill('21:30');
+  await form.getByRole('button', { name: 'Salvar' }).click();
+  await form.getByText('A turma já tem aula de Lógica de Programação').waitFor();
+  await form.getByLabel('Início').fill('20:40');
+  await form.getByLabel('Término').fill('22:20');
+  await form.getByRole('button', { name: 'Salvar' }).click();
+  await page.getByRole('cell', { name: '20:40 – 22:20' }).waitFor();
+  step('turma criada; oferta com professor/horário e choque de horário bloqueado');
+
+  await page.goto(`${BASE}/academico/alunos`);
+  await page.getByRole('button', { name: 'Novo aluno' }).click();
+  form = page.getByRole('dialog');
+  await form.getByLabel('Nome completo').fill('Beatriz Souza');
+  await form.getByLabel('CPF').fill('123.456.789-00');
+  await form.getByLabel('E-mail').fill('beatriz@aluno.lucena.edu.br');
+  await form.getByRole('button', { name: 'Salvar' }).click();
+  await form.getByText('Verifique os campos destacados').waitFor();
+  await form.getByLabel('CPF').fill(cpf(2));
+  await form.getByRole('button', { name: 'Salvar' }).click();
+  await page.getByText('Acesso gerado').waitFor();
+  const registration = (await page.locator('.credential-username').innerText()).trim();
+  const studentTemp = (await page.locator('.secret-value').innerText()).trim();
+  if (!/^\d{4}00001$/.test(registration)) throw new Error('matrícula inesperada: ' + registration);
+  await page.getByRole('button', { name: 'Concluir' }).click();
+  await page.getByRole('cell', { name: registration }).waitFor();
+  await shot(page, '18-alunos');
+
+  await page.goto(`${BASE}/academico/turmas`);
+  await page.getByRole('link', { name: 'ADS1N' }).click();
+  await page.getByLabel('Incluir aluno (nome, matrícula ou CPF)').fill('Beat');
+  await page.getByRole('option', { name: new RegExp(registration) }).click();
+  await page.getByRole('cell', { name: 'Beatriz Souza' }).waitFor();
+  await page.getByText('1 / 40').waitFor();
+  await shot(page, '19-turma-detalhe');
+  step(`aluno cadastrado (matrícula ${registration}) e incluído na turma`);
+
+  // O aluno entra com a MATRÍCULA, configura o Google Authenticator e troca a senha temporária
+  await page.getByRole('button', { name: 'Menu do usuário' }).click();
+  await page.getByRole('menuitem', { name: 'Sair' }).click();
+  await page.goto(`${BASE}/f/lucena-centro/login`);
+  await page.getByLabel('Matrícula ou nome de usuário').fill(registration);
+  await page.getByLabel('Senha', { exact: true }).fill(studentTemp);
+  await page.getByRole('button', { name: 'Entrar' }).click();
+  const studentSecret = await setupAuthenticator(page);
+  await page.getByLabel('Senha atual').fill(studentTemp);
+  await page.getByLabel('Código de 6 dígitos do Google Authenticator').fill(await freshCode(studentSecret));
+  await page.getByRole('button', { name: 'Continuar' }).click();
+  await page.getByLabel('Nova senha', { exact: true }).fill('Estudo#Forte2026');
+  await page.getByLabel('Repetir nova senha').fill('Estudo#Forte2026');
+  await page.getByRole('button', { name: 'Confirmar alteração de senha' }).click();
+  await page.getByText('Senha alterada com sucesso').waitFor();
+  await page.getByLabel('Matrícula ou nome de usuário').fill(registration);
+  await page.getByLabel('Senha', { exact: true }).fill('Estudo#Forte2026');
+  await page.getByRole('button', { name: 'Entrar' }).click();
+  await page.getByLabel('Código do autenticador').fill(await freshCode(studentSecret));
+  await page.getByRole('button', { name: 'Verificar e entrar' }).click();
+  await page.getByRole('heading', { name: /Olá, Beatriz/ }).waitFor();
+  await page.getByText(registration).first().waitFor();
+  if (await page.getByRole('link', { name: 'Cursos' }).count()) throw new Error('aluno não deveria ver o menu acadêmico');
+  await page.goto(`${BASE}/academico/alunos`);
+  await page.getByText('Você não tem permissão').waitFor();
+  await shot(page, '20-aluno-inicio');
+  step('aluno entrou com a matrícula + autenticador e não acessa cadastros');
+
+  // 6) Responsividade (celular): menu vira gaveta, tabela vira cartões
   const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, storageState: await ctx.storageState() });
   const m = await mobile.newPage();
   await m.goto(`${BASE}/f/lucena-centro/login`);

@@ -19,3 +19,11 @@ export async function freshCode(base32) {
   await new Promise(r => setTimeout(r, wait));
   return totp(base32);
 }
+
+/** CPF válido determinístico para os testes. */
+export function cpf(n) {
+  const base = String(529982240 + n * 7919).padStart(9, '0').slice(0, 9);
+  const dv = (s, w) => { let t = 0; for (let i = 0; i < s.length; i++) t += Number(s[i]) * (w - i); return ((t * 10) % 11) % 10; };
+  const d1 = dv(base, 10);
+  return base + d1 + dv(base + d1, 11);
+}

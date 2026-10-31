@@ -28,6 +28,15 @@ const NAV: NavGroup[] = [
     { label: 'Faculdades', icon: 'account_balance', link: '/plataforma/faculdades', platformOnly: true },
     { label: 'Planos', icon: 'workspace_premium', link: '/plataforma/planos', platformOnly: true },
   ] },
+  { title: 'Acadêmico', items: [
+    { label: 'Cursos', icon: 'school', link: '/academico/cursos', perms: ['COURSE_VIEW', 'COURSE_MANAGE'] },
+    { label: 'Disciplinas', icon: 'menu_book', link: '/academico/disciplinas', perms: ['COURSE_VIEW', 'COURSE_MANAGE'] },
+    { label: 'Períodos letivos', icon: 'date_range', link: '/academico/periodos', perms: ['COURSE_VIEW', 'COURSE_MANAGE'] },
+    { label: 'Turmas', icon: 'groups', link: '/academico/turmas', perms: ['COURSE_VIEW', 'COURSE_MANAGE', 'ENROLLMENT_MANAGE'] },
+    { label: 'Alunos', icon: 'badge', link: '/academico/alunos', perms: ['STUDENT_VIEW', 'STUDENT_MANAGE', 'ENROLLMENT_MANAGE'] },
+    { label: 'Professores', icon: 'co_present', link: '/academico/professores', perms: ['TEACHER_MANAGE', 'COURSE_MANAGE'] },
+    { label: 'Funcionários', icon: 'work', link: '/academico/funcionarios', perms: ['USER_VIEW', 'USER_MANAGE'] },
+  ] },
   { title: 'Administração', items: [
     { label: 'Usuários', icon: 'group', link: '/admin/usuarios', perms: ['USER_VIEW', 'USER_MANAGE'] },
     { label: 'Cargos e permissões', icon: 'admin_panel_settings', link: '/admin/cargos', perms: ['ROLE_MANAGE', 'USER_VIEW', 'USER_MANAGE'] },
@@ -38,7 +47,8 @@ const NAV: NavGroup[] = [
 
 const TITLES: Record<string, string> = {
   inicio: 'Início', perfil: 'Meu perfil', plataforma: 'Plataforma', faculdades: 'Faculdades', planos: 'Planos', admin: 'Administração',
-  usuarios: 'Usuários', cargos: 'Cargos e permissões', configuracoes: 'Configurações', auditoria: 'Auditoria',
+  academico: 'Acadêmico', cursos: 'Cursos', disciplinas: 'Disciplinas', periodos: 'Períodos letivos', turmas: 'Turmas',
+  alunos: 'Alunos', professores: 'Professores', funcionarios: 'Funcionários', usuarios: 'Usuários', cargos: 'Cargos e permissões', configuracoes: 'Configurações', auditoria: 'Auditoria',
 };
 
 @Component({

@@ -21,6 +21,20 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'academico',
+        children: [
+          { path: 'cursos', canActivate: [permissionGuard('COURSE_VIEW', 'COURSE_MANAGE')], loadComponent: () => import('./features/academic/courses.component').then(m => m.CoursesComponent), title: 'Cursos' },
+          { path: 'cursos/:id', canActivate: [permissionGuard('COURSE_VIEW', 'COURSE_MANAGE')], loadComponent: () => import('./features/academic/curriculum.component').then(m => m.CurriculumComponent), title: 'Matriz curricular' },
+          { path: 'disciplinas', canActivate: [permissionGuard('COURSE_VIEW', 'COURSE_MANAGE')], loadComponent: () => import('./features/academic/subjects.component').then(m => m.SubjectsComponent), title: 'Disciplinas' },
+          { path: 'periodos', canActivate: [permissionGuard('COURSE_VIEW', 'COURSE_MANAGE')], loadComponent: () => import('./features/academic/terms.component').then(m => m.TermsComponent), title: 'Períodos letivos' },
+          { path: 'turmas', canActivate: [permissionGuard('COURSE_VIEW', 'COURSE_MANAGE', 'ENROLLMENT_MANAGE')], loadComponent: () => import('./features/academic/classes.component').then(m => m.ClassesComponent), title: 'Turmas' },
+          { path: 'turmas/:id', canActivate: [permissionGuard('COURSE_VIEW', 'COURSE_MANAGE', 'ENROLLMENT_MANAGE')], loadComponent: () => import('./features/academic/class-detail.component').then(m => m.ClassDetailComponent), title: 'Turma' },
+          { path: 'professores', canActivate: [permissionGuard('TEACHER_MANAGE', 'COURSE_MANAGE')], data: { kind: 'teacher' }, loadComponent: () => import('./features/academic/people-list.component').then(m => m.PeopleListComponent), title: 'Professores' },
+          { path: 'funcionarios', canActivate: [permissionGuard('USER_VIEW', 'USER_MANAGE')], data: { kind: 'employee' }, loadComponent: () => import('./features/academic/people-list.component').then(m => m.PeopleListComponent), title: 'Funcionários' },
+          { path: 'alunos', canActivate: [permissionGuard('STUDENT_VIEW', 'STUDENT_MANAGE', 'ENROLLMENT_MANAGE')], loadComponent: () => import('./features/academic/students.component').then(m => m.StudentsComponent), title: 'Alunos' },
+        ],
+      },
+      {
         path: 'admin',
         children: [
           { path: 'usuarios', canActivate: [permissionGuard('USER_VIEW', 'USER_MANAGE')], loadComponent: () => import('./features/admin/users.component').then(m => m.UsersComponent), title: 'Usuários' },
