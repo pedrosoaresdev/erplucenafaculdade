@@ -34,7 +34,7 @@ public class ChallengeService {
     }
 
     /** Carrega com bloqueio de linha um desafio válido e do propósito esperado. */
-    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY, noRollbackFor = ApiException.class)
     public AuthChallenge lockUsable(String raw, Set<AuthChallenge.Purpose> purposes) {
         if (raw == null || raw.isBlank()) {
             throw ApiException.unauthorized("CHALLENGE_INVALID", "Sessão de login expirada. Entre novamente");

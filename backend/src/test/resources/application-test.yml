@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: ${ERP_TEST_DB_URL:jdbc:postgresql://localhost:5432/erp_test}
+    username: ${ERP_TEST_DB_USER:erp}
+    password: ${ERP_TEST_DB_PASSWORD:erp}
+  flyway:
+    clean-disabled: false
+erp:
+  security:
+    jwt-secret: dGVzdC1vbmx5LWp3dC1zZWNyZXQtMzItYnl0ZXMtbG9uZyEhIQ==
+    encryption-key: dGVzdC1vbmx5LWFlcy1rZXktMzItYnl0ZXMtbG9uZyE=
+    cookie-secure: false
+    auth-requests-per-minute: 100000
+  bootstrap:
+    master-username: master
+    master-password: Plataforma#Teste2026
+    master-email: master@test.local
